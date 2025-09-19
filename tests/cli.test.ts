@@ -23,6 +23,7 @@ vi.mock("../src/utils/style.js", () => ({
 
 vi.mock("../src/utils/system-utils.js", () => ({
   exit: vi.fn(),
+  getPackageVersion: vi.fn(() => "1.0.0"),
 }));
 
 vi.mock("../src/utils/errors.js", () => ({
@@ -35,9 +36,6 @@ vi.mock("../src/utils/errors.js", () => ({
   },
 }));
 
-vi.mock("fs", () => ({
-  readFileSync: vi.fn(() => '{"version": "1.0.0"}'),
-}));
 
 // Mock commander with proper command registration and method chaining
 const mockCommands: Array<{ name: () => string; action: (fn: () => void) => void }> = [];
@@ -92,6 +90,7 @@ describe("cli", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
     process.exit = vi.fn() as never;
     // Clear the mock commands array
     mockCommands.length = 0;
@@ -112,11 +111,12 @@ describe("cli", () => {
       expect(logo).toHaveBeenCalled();
     });
 
-    it("validates package.json reading functionality", async () => {
-      const fs = await import("fs");
+    it("calls getPackageVersion on startup", async () => {
+      const { getPackageVersion } = await import("../src/utils/system-utils.js");
+      
+      await import("../src/cli.js");
 
-      expect(fs.readFileSync).toBeDefined();
-      expect(typeof fs.readFileSync).toBe("function");
+      expect(getPackageVersion).toHaveBeenCalled();
     });
   });
 
@@ -129,17 +129,11 @@ describe("cli", () => {
     });
 
     it("validates module structure and dependencies", async () => {
-      const fs = await import("fs");
-      const path = await import("path");
-      const { isJSONString } = await import("../src/utils/guards.js");
-
-      // Verify core dependencies are available
-      expect(fs.readFileSync).toBeDefined();
-      expect(path.join).toBeDefined();
-      expect(isJSONString).toBeDefined();
-
+      const { getPackageVersion } = await import("../src/utils/system-utils.js");
+      
       const cliModule = await import("../src/cli.js");
       expect(cliModule).toBeDefined();
+      expect(getPackageVersion).toHaveBeenCalled();
     });
   });
 
@@ -233,44 +227,6 @@ describe("cli", () => {
     });
   });
 
-  describe("package.json validation", () => {
-    it("handles invalid package.json format", async () => {
-      const { InvalidConfigurationError } = await import("../src/utils/errors.js");
-      const { isJSONString } = await import("../src/utils/guards.js");
-
-      const invalidJson = "invalid json content";
-      expect(isJSONString(invalidJson)).toBe(false);
-
-      expect(() => {
-        if (!isJSONString(invalidJson)) {
-          throw new InvalidConfigurationError(["errors.configuration.invalidPackageJson"]);
-        }
-      }).toThrow(InvalidConfigurationError);
-    });
-
-    it("processes valid package.json", async () => {
-      const fs = await import("fs");
-      const validPackageJson = JSON.stringify({ version: "2.0.0" });
-
-      vi.mocked(fs.readFileSync).mockReturnValue(validPackageJson);
-
-      const cliModule = await import("../src/cli.js");
-      expect(cliModule).toBeDefined();
-    });
-
-    it("validates package.json path construction", async () => {
-      const { dirname, join } = await import("path");
-      const { fileURLToPath, pathToFileURL } = await import("url");
-
-      const testPath = process.platform === "win32" ? "C:\\test\\src\\cli.js" : "/test/src/cli.js";
-      const mockUrl = pathToFileURL(testPath).href;
-      
-      const currentDir = dirname(fileURLToPath(mockUrl));
-      const packagePath = join(currentDir, "../package.json");
-
-      expect(packagePath).toContain("package.json");
-    });
-  });
 
   describe("CLI program integration", () => {
     it("imports commander and CLI module successfully", async () => {
@@ -407,17 +363,12 @@ describe("cli", () => {
       expect(cliModule).toBeDefined();
     });
 
-    it("tests package.json version extraction", async () => {
-      const fs = await import("fs");
-      const path = await import("path");
+    it("uses getPackageVersion utility", async () => {
+      const { getPackageVersion } = await import("../src/utils/system-utils.js");
 
-      // Mock a valid package.json
-      const mockPackageJson = { version: "2.1.0", name: "test-package" };
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockPackageJson));
-
-      // Test path operations
-      const testPath = path.join("test", "../package.json");
-      expect(testPath).toContain("package.json");
+      await import("../src/cli.js");
+      
+      expect(getPackageVersion).toHaveBeenCalled();
     });
 
     it("validates error handling integration", async () => {

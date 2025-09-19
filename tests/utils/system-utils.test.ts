@@ -587,4 +587,89 @@ describe("system-utils", () => {
       expect(result).toMatch(/\[REDACTED:[0-9a-f]{8}\]/);
     });
   });
+
+  describe("getPackageVersion", () => {
+    const mockReadFileSync = vi.fn();
+    
+    beforeEach(() => {
+      vi.doMock("node:fs", () => ({
+        readFileSync: mockReadFileSync,
+      }));
+    });
+
+    afterEach(() => {
+      vi.doUnmock("node:fs");
+    });
+
+    it("returns version from valid package.json", async () => {
+      const validPackageJson = JSON.stringify({ version: "1.2.3", name: "test-package" });
+      mockReadFileSync.mockReturnValue(validPackageJson);
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const version = getPackageVersion();
+      
+      expect(version).toBe("1.2.3");
+      expect(mockReadFileSync).toHaveBeenCalledWith(expect.stringContaining("package.json"), "utf-8");
+    });
+
+    it("throws InvalidConfigurationError for invalid JSON", async () => {
+      mockReadFileSync.mockReturnValue("{ invalid json");
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      
+      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+    });
+
+    it("throws InvalidConfigurationError for missing version field", async () => {
+      const packageJsonWithoutVersion = JSON.stringify({ name: "test-package" });
+      mockReadFileSync.mockReturnValue(packageJsonWithoutVersion);
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      
+      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+    });
+
+    it("throws InvalidConfigurationError for non-string version", async () => {
+      const packageJsonWithInvalidVersion = JSON.stringify({ version: 123 });
+      mockReadFileSync.mockReturnValue(packageJsonWithInvalidVersion);
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      
+      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+    });
+
+    it("throws InvalidConfigurationError when readFileSync fails", async () => {
+      mockReadFileSync.mockImplementation(() => {
+        throw new Error("File not found");
+      });
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      
+      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+    });
+
+    it("throws InvalidConfigurationError for non-object package.json", async () => {
+      const nonObjectPackageJson = JSON.stringify("not an object");
+      mockReadFileSync.mockReturnValue(nonObjectPackageJson);
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      
+      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+    });
+
+    it("throws InvalidConfigurationError for array package.json", async () => {
+      const arrayPackageJson = JSON.stringify(["not", "an", "object"]);
+      mockReadFileSync.mockReturnValue(arrayPackageJson);
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      
+      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+    });
+  });
 });
