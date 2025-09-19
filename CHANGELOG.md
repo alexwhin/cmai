@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.2.1](https://github.com/alexwhin/cmai/compare/v0.2.0...v0.2.1) (2025-09-19)
+
 ## [0.2.0](https://github.com/alexwhin/cmai/compare/v0.1.12...v0.2.0) (2025-09-19)
 
 ### Features
