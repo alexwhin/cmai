@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.1.12 (2025-09-19)
+
 ## [0.1.9](https://github.com/alexwhin/cmai/compare/v0.1.7...v0.1.9) (2025-09-19)
 
 ## 0.1.7 (2025-09-19)
