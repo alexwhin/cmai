@@ -31,7 +31,7 @@ export function isValidEmail(value: unknown): value is string {
   return emailRegex.test(value) && !value.includes("..");
 }
 
-export function isBoolean(value: unknown): value is boolean {
+function isBoolean(value: unknown): value is boolean {
   return typeof value === "boolean";
 }
 
