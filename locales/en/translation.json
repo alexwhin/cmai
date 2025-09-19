@@ -1,0 +1,358 @@
+{
+  "errors": {
+    "configuration": {
+      "notFound": "Configuration file not found at {{path}}",
+      "notFoundNoPath": "Configuration not found. Please run 'cmai init' to set up your configuration",
+      "invalid": "Invalid configuration: {{message}}",
+      "invalidStructure": "Configuration file has invalid structure or missing required data",
+      "missingProvider": "Provider '{{provider}}' is required but not configured",
+      "missingApiKey": "Missing API key for provider: {{provider}}",
+      "unsupportedProvider": "Unsupported provider: {{provider}}",
+      "invalidUsageMode": "Invalid usage mode: {{mode}}",
+      "alreadyExists": "Configuration already exists. Do you want to overwrite it?",
+      "loadSchemaFailed": "Could not load settings schema for validation",
+      "invalidPackageJson": "Invalid package.json format"
+    },
+    "git": {
+      "notARepository": "Not a git repository",
+      "noStagedFiles": "No staged files found. Stage some changes before running.",
+      "commitFailed": "Failed to commit changes: {{error}}",
+      "invalidCommitIndex": "Invalid commit index: {{index}}. Please select a number between 1 and {{max}}.",
+      "commandFailed": "Git command failed: {{command}}"
+    },
+    "api": {
+      "requestFailed": "API request failed: {{message}}",
+      "timeout": "Request timed out after {{seconds}} seconds",
+      "invalidResponse": "Invalid response from API: {{message}}",
+      "rateLimitExceeded": "Rate limit exceeded. Please try again later.",
+      "authenticationFailed": "Authentication failed. Please check your API key.",
+      "generationFailed": "Failed to generate messages from provider",
+      "regenerationFailed": "Failed to regenerate messages"
+    },
+    "model": {
+      "generationFailed": "Failed to generate commit message: {{error}}",
+      "invalidInput": "Invalid input for model: {{message}}",
+      "unsupportedModel": "Unsupported model: {{model}}"
+    },
+    "network": {
+      "connectionFailed": "Network connection failed: {{message}}",
+      "dnsResolutionFailed": "DNS resolution failed for: {{host}}",
+      "sslError": "SSL/TLS error: {{message}}",
+      "invalidKey": "The key appears to be invalid. Please check your key and try again.",
+      "checkConnection": "Network error. Please check your internet connection and try again.",
+      "connectionRefusedWithProvider": "Connection refused ({{provider}})",
+      "connectionRefusedNoProvider": "Connection refused",
+      "serverNotFoundWithProvider": "Unable to reach server ({{provider}})",
+      "serverNotFoundNoProvider": "Unable to reach server"
+    },
+    "system": {
+      "fileReadFailed": "Failed to read file: {{path}}",
+      "fileWriteFailed": "Failed to write file: {{path}}",
+      "commandNotFound": "Command not found: {{command}}",
+      "insufficientPermissions": "Insufficient permissions: {{message}}",
+      "clipboardFailed": "Failed to copy to clipboard",
+      "commitCreateFailed": "Failed to create commit",
+      "settingsLoopExceeded": "Settings loop exceeded maximum iterations",
+      "processWouldExit": "Process would exit with code {{code}}",
+      "cannotCopyEmptyText": "Cannot copy empty text",
+      "defaultError": "An unexpected error occurred",
+      "i18nNotInitialized": "i18n not initialized when calling t(\"{{key}}\")"
+    },
+    "unknown": "An unexpected error occurred: {{message}}"
+  },
+  "messages": {
+    "generating": "Generating commit messages...",
+    "analyzing": "Analyzing {{count}} staged files...",
+    "selectCommit": "Select a commit message:",
+    "commitCreated": "Commit created successfully!",
+    "cancelled": "Commit cancelled",
+    "configCreated": "Configuration file created at {{path}}",
+    "settingsUpdated": "Settings updated successfully",
+    "confirmReset": "Are you sure you want to reset all settings to defaults?",
+    "welcome": "Welcome to Commit Polish! Let's set up your configuration.",
+    "retry": "Retrying... (attempt {{attempt}} of {{max}})",
+    "loading": "Loading...",
+    "setupCancelled": "Setup cancelled.",
+    "configSaved": "Configuration saved",
+    "setupComplete": "Setup complete! You can now run 'cmai' to generate commit messages",
+    "keepingExistingConfig": "Keeping existing configuration.",
+    "providerUpdated": "Provider updated",
+    "apiKeyUpdated": "API key updated",
+    "modelUpdated": "Model updated",
+    "maxCommitLengthUpdated": "Max commit length updated to: {{value}} characters",
+    "commitChoicesUpdated": "Commit choices count updated to: {{value}}",
+    "redactSensitiveUpdated": "Sensitive data redaction set to {{value}}",
+    "usageModeUpdated": "Usage mode updated",
+    "customRulesUpdated": "Custom rules updated",
+    "messageCopied": "Message copied to clipboard",
+    "manualCopyMessage": "You can manually copy the message above",
+    "creatingCommit": "Creating commit...",
+    "commitReadyForPush": "Commit created successfully (ready for push)",
+    "terminalCommitReady": "Edit command or press enter to execute",
+    "editOrExecuteCommand": "Edit the command below or press Enter to execute",
+    "commitExecuted": "Command executed successfully",
+    "stagedChangesToProcess": "Staged changes to process",
+    "validatingKey": "Validating key",
+    "keyValidated": "Key validated successfully",
+    "keyValidationFailed": "Key validation failed",
+    "invalidKeyOrConnection": "Invalid key or unable to connect to the API",
+    "failedToLoadModels": "Failed to load models",
+    "currentRules": "Current rules:",
+    "noCustomRules": "No custom rules defined",
+    "addedRule": "Added rule: \"{{rule}}\"",
+    "removedRule": "Removed rule: \"{{rule}}\""
+  },
+  "prompts": {
+    "selectProvider": "Select your provider",
+    "enterApiKey": "Enter your {{provider}} API key",
+    "enterApiKeyNoProvider": "Enter your API key",
+    "enterProviderUrl": "Enter your server URL",
+    "selectModel": "Select a model",
+    "confirmSettings": "Would you like to proceed with these settings?",
+    "continueWithGeneration": "Continue with commit message generation?",
+    "tryAgain": "Would you like to try again?",
+    "enterCustomMessage": "Enter your commit message",
+    "selectSetting": "Select a setting to modify",
+    "enterCustomRule": "Enter a custom rule for commit messages",
+    "selectRuleToRemove": "Select a rule to remove",
+    "addCustomRules": "Add custom rules for commit message generation?",
+    "whatToDo": "What would you like to do?",
+    "fetchingModels": "Fetching available models...",
+    "modelsLoaded": "Models loaded successfully",
+    "selectUILanguage": "Select tool language",
+    "selectCommitLanguage": "Select commit message language"
+  },
+  "labels": {
+    "provider": "Provider",
+    "model": "Model",
+    "apiKey": "API Key",
+    "usageMode": "Usage mode",
+    "interactive": "Interactive",
+    "automatic": "Automatic",
+    "custom": "Custom",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No",
+    "maxCommitLength": "Max commit length",
+    "commitChoicesCount": "Number of commit message options to generate",
+    "redactSensitiveData": "Redact sensitive data before sending to AI",
+    "customRules": "Custom rules",
+    "notSet": "Not set",
+    "characters": "{{count}} characters",
+    "options": "{{count}} options",
+    "rules_one": "{{count}} rule",
+    "rules_other": "{{count}} rules",
+    "uiLanguage": "Tool language",
+    "commitLanguage": "Commit message language",
+    "limits": "Limits",
+    "security": "Security",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "languages": "Languages"
+  },
+  "commands": {
+    "app": {
+      "name": "cmai",
+      "description": "commits that write themselves"
+    },
+    "init": {
+      "description": "Initialize configuration"
+    },
+    "generate": {
+      "description": "Generate commit messages for staged changes",
+      "dryrun": "Show full prompt before sending"
+    },
+    "settings": {
+      "description": "Edit configuration settings"
+    },
+    "debug": "Show debug information on errors"
+  },
+  "providers": {
+    "openai": "OpenAI",
+    "anthropic": "Anthropic",
+    "ollama": "Ollama"
+  },
+  "usageModes": {
+    "interactive": {
+      "name": "Create commit",
+      "description": "Generate message and create commit interactively",
+      "instruction": "You can now use \"git commit\" without a message to generate one automatically"
+    },
+    "automatic": {
+      "name": "Copy to clipboard",
+      "description": "Generate and copy message to clipboard",
+      "instruction": "Run \"cmai\" or \"cmai generate\" to generate commit messages"
+    },
+    "terminal": {
+      "name": "Terminal output",
+      "description": "Output commit command to terminal for editing",
+      "instruction": "Run \"cmai\" or \"cmai generate\" to output commit command"
+    }
+  },
+  "actions": {
+    "exit": "Exit",
+    "regenerate": "Regenerate options",
+    "custom": "Enter custom message",
+    "addRule": "Add rule",
+    "removeRule": "Remove rule",
+    "done": "Done",
+    "return": "Return"
+  },
+  "validation": {
+    "apiKeyRequired": "API key is required",
+    "urlRequired": "URL is required",
+    "ruleEmpty": "Rule cannot be empty",
+    "ruleExists": "This rule already exists",
+    "maxCommitLengthRange": "Max commit length must be between {{min}} and {{max}}",
+    "commitChoicesRange": "Commit choices count must be between {{min}} and {{max}}"
+  },
+  "hints": {
+    "select": "Use arrow keys to navigate",
+    "customRule": "all messages must be lowercase",
+    "optional": "Optional: personalize how the AI generates commits",
+    "recommendedCommitLength": "Recommended: 72 characters",
+    "defaultCommitChoices": "Default: 5 options"
+  },
+  "debug": {
+    "information": "Debug information:",
+    "stackTrace": "Stack trace:",
+    "error": "Error: {{message}}",
+    "rawError": "Raw error: {{error}}"
+  },
+  "settings": {
+    "noConfigFound": "No configuration found. Starting setup...",
+    "selectSetting": "Select a setting to modify",
+    "maxIterationsExceeded": "Settings loop exceeded maximum iterations",
+    "view": "View Current Settings",
+    "provider": {
+      "updated": "Provider updated",
+      "resetNotice": "Key and model have been reset for the new provider"
+    },
+    "apiKey": {
+      "notSet": "Not set",
+      "updated": "Key updated",
+      "updatedUrl": "Server URL updated"
+    },
+    "model": {
+      "notSet": "Not set",
+      "updated": "Model updated"
+    },
+    "maxLength": {
+      "updated": "Max commit length updated to: {{value}} characters"
+    },
+    "commitChoicesCount": {
+      "title": "Number of commit message options to generate",
+      "updated": "Commit choices count updated to: {{value}}"
+    },
+    "redactSensitive": {
+      "title": "Redact sensitive data before sending to AI",
+      "updated": "Sensitive data redaction set to {{value}}"
+    },
+    "usageMode": {
+      "updated": "Usage mode updated"
+    },
+    "customRules": {
+      "title": "Manage custom rules",
+      "none": "None",
+      "count": "{{count}} rule{{suffix}}",
+      "updated": "Custom rules updated"
+    },
+    "uiLanguage": {
+      "updated": "Interface language updated to {{language}}"
+    },
+    "commitLanguage": {
+      "updated": "Commit message language updated to {{language}}"
+    }
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No"
+  },
+  "clipboard": {
+    "allCommandsFailed": "All clipboard commands failed. Tried {{count}} different methods.",
+    "failedToCopy": "Failed to copy to clipboard. Please ensure you have clipboard access.",
+    "failedUnix": "{{baseMessage}} On Unix systems, you may need to install xclip, xsel, or wl-clipboard.",
+    "failedWindows": "{{baseMessage}} Ensure PowerShell is available and clipboard access is permitted.",
+    "failedMac": "{{baseMessage}} Ensure pbcopy is available and clipboard access is permitted.",
+    "textMustBeString": "Text must be a string",
+    "unsupportedPlatform": "Unsupported platform: {{platform}}",
+    "cannotCopyEmpty": "Cannot copy empty text",
+    "detailedErrors": "Detailed errors: {{errors}}"
+  },
+  "languages": {
+    "english": "English"
+  },
+  "updates": {
+    "available": "Update available: v{{currentVersion}} → v{{latestVersion}} run {{command}}"
+  },
+  "ai": {
+    "prompt": {
+      "generate": "Generate exactly {{commitChoicesCount}} commit messages for the following changes.",
+      "rules": {
+        "format": "Use format <type>(<optional scope>): <description>.",
+        "imperativeMood": "Use imperative mood.",
+        "noCapitalization": "No capitalization at the start of the description.",
+        "noPeriod": "No period at the end.",
+        "maxLength": "Maximum {{maxCommitLength}} characters.",
+        "types": {
+          "feat": "feat: new feature",
+          "fix": "fix: bug fix",
+          "docs": "docs: documentation",
+          "style": "style: formatting, missing semicolons, etc.",
+          "refactor": "refactor: restructuring code",
+          "perf": "perf: performance improvements",
+          "test": "test: adding tests",
+          "build": "build: build system or external dependencies",
+          "ci": "ci: CI configuration",
+          "chore": "chore: maintenance tasks"
+        },
+        "title": "Rules:",
+        "eachMessageSeparateLine": "Each message must be on a separate line",
+        "optionsShouldDescribeAllChanges": "The {{commitChoicesCount}} options should be different ways of describing the same complete set of changes",
+        "eachCommitDescribesAll": "Each commit message must describe ALL the changes in the difference, not just individual parts",
+        "variationsInWording": "The variations should be in wording/style, NOT in which changes are included",
+        "followCommitStyle": "Follow the commit style and format shown in the recent commits",
+        "keepMessagesConcise": "Keep messages concise and clear",
+        "combineMultipleChanges": "If multiple distinct changes exist, combine them appropriately (e.g., \"update X and improve Y\")",
+        "useConventionalFormat": "If no recent commits provided, use conventional commit format (type: description)"
+      },
+      "recentCommitsPrefix": "Recent commit messages for styling, tone and formatting reference:",
+      "rejectedNote": "NOTE: The user rejected the previous batch of suggestions. Please provide more diverse or creative alternatives.",
+      "rejectedMultipleNote": "NOTE: The user has rejected {{regenerationAttempts}} previous batches of suggestions. Please provide significantly different alternatives with varied approaches, styles, and focus areas.",
+      "customRulesPrefix": "Custom commit message rules (must be followed strictly):",
+      "temperatureAndTone": {
+        "title": "Temperature and Tone:",
+        "matchFormality": "Match the formality level of recent commits (professional vs casual)",
+        "maintainTechnicalDepth": "Maintain consistent technical depth and detail as shown in examples",
+        "preserveNamingConventions": "Preserve team's naming conventions and terminology",
+        "mirrorSpecificity": "Mirror the specificity and brevity patterns from previous commits"
+      },
+      "context": {
+        "title": "Context:",
+        "branch": "Branch",
+        "files": "Files",
+        "differencePreview": "Difference preview:"
+      },
+      "response": {
+        "returnAsJson": "Return your response as a JSON object with this exact structure:",
+        "generateExactly": "Generate exactly {{commitChoicesCount}} commit messages in the JSON array.",
+        "important": "IMPORTANT: Return ONLY valid JSON - no explanations, no markdown formatting, no code blocks.",
+        "exampleCommit1": "commit message 1",
+        "exampleCommit2": "commit message 2"
+      }
+    },
+    "modelRequired": "Model name is required",
+    "noSuitableModels": "No suitable models found for {{provider}}",
+    "invalidResponseFormat": "Invalid response format",
+    "responseNotObject": "Response is not a valid object",
+    "missingCommitsArray": "Response missing commits array",
+    "commitsArrayEmpty": "Commits array is empty",
+    "noValidCommitMessages": "No valid commit messages found",
+    "failedToParseCommits": "Failed to parse commit messages",
+    "unexpectedError": "An unexpected error occurred",
+    "jsonParsingFailed": "JSON parsing failed, falling back to text parsing:\n{{error}}"
+  },
+  "update": {
+    "available": "Update available: {{current}} → {{latest}}"
+  }
+}

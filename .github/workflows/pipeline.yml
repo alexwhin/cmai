@@ -1,0 +1,301 @@
+name: Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+  actions: read
+
+jobs:
+  quality-checks:
+    name: Code Quality & Testing
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set Up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: Set Up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit Production Dependencies
+        run: pnpm audit --audit-level moderate --prod
+        continue-on-error: true
+
+      - name: Audit All Dependencies
+        run: pnpm audit --audit-level high
+        continue-on-error: true
+
+      - name: Run Linter
+        run: pnpm run lint
+
+      - name: Run Type Checking
+        run: pnpm run typecheck
+
+      - name: Check Unused Dependencies
+        run: pnpm run knip
+
+      - name: Run Tests
+        run: |
+          echo "Running tests with JUnit reporter..."
+          pnpm run test:ci
+          if [ -f "test-results.junit.xml" ]; then
+            echo "JUnit test results generated successfully"
+            ls -la test-results.junit.xml
+          else
+            echo "WARNING: JUnit test results file not found"
+          fi
+
+      - name: Verify Test Results File
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Checking for test results file..."
+          if [ -f "test-results.junit.xml" ]; then
+            echo "Test results file found:"
+            ls -la test-results.junit.xml
+            echo "File size: $(wc -c < test-results.junit.xml) bytes"
+            echo "First 10 lines:"
+            head -10 test-results.junit.xml
+          else
+            echo "ERROR: test-results.junit.xml not found"
+            echo "Current directory contents:"
+            ls -la
+          fi
+
+      - name: Build Package
+        run: pnpm run build
+
+      - name: Generate Bundle Stats
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Generating bundle statistics..."
+          if [ -f "dist/metafile-esm.json" ]; then
+            # Create initial bundle stats structure
+            node -e "
+              const fs = require('fs');
+              const meta = JSON.parse(fs.readFileSync('dist/metafile-esm.json', 'utf8'));
+              const stats = {
+                version: '1',
+                plugin: { name: 'codecov-bundle-analyzer' },
+                builtAt: new Date().toISOString(),
+                bundleName: 'cmai',
+                assets: [],
+                chunks: []
+              };
+              
+              // Process outputs
+              Object.entries(meta.outputs).forEach(([path, output]) => {
+                if (path.endsWith('.js')) {
+                  stats.assets.push({
+                    name: path,
+                    size: output.bytes
+                  });
+                  
+                  const modules = [];
+                  if (output.inputs) {
+                    Object.entries(output.inputs).forEach(([modPath, modInfo]) => {
+                      modules.push({
+                        name: modPath,
+                        size: modInfo.bytesInOutput || 0
+                      });
+                    });
+                  }
+                  
+                  stats.chunks.push({
+                    id: path,
+                    uniqueId: path,
+                    names: [path],
+                    size: output.bytes,
+                    modules: modules
+                  });
+                }
+              });
+              
+              fs.writeFileSync('bundle-stats.json', JSON.stringify(stats, null, 2));
+            "
+            
+            echo "Bundle stats generated:"
+            ls -la bundle-stats.json
+            echo "First 20 lines of bundle stats:"
+            head -20 bundle-stats.json
+          else
+            echo "WARNING: No metafile found, skipping bundle stats generation"
+          fi
+
+      - name: Generate Coverage Report
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Generating test coverage report..."
+          # Backup JUnit results if they exist
+          if [ -f "test-results.junit.xml" ]; then
+            cp test-results.junit.xml test-results.junit.backup.xml
+          fi
+          pnpm run test:coverage
+          echo "Coverage generation completed with exit code: $?"
+          # Restore JUnit results if they were overwritten
+          if [ -f "test-results.junit.backup.xml" ] && [ ! -f "test-results.junit.xml" ]; then
+            mv test-results.junit.backup.xml test-results.junit.xml
+          fi
+
+          # Verify coverage files were created
+          if [ -f "coverage/lcov.info" ]; then
+            echo "LCOV coverage file generated successfully"
+            wc -l coverage/lcov.info
+          else
+            echo "ERROR: LCOV coverage file not found"
+          fi
+
+          if [ -f "coverage/coverage-final.json" ]; then
+            echo "JSON coverage file generated successfully"
+            ls -lh coverage/coverage-final.json
+          else
+            echo "ERROR: JSON coverage file not found"
+          fi
+
+      - name: Test Local Installation
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          if [ "$ACT" != "true" ]; then
+            echo "Testing package installation..."
+            pnpm pack
+            npm install -g *.tgz
+            cmai --help
+            echo "Package installation test passed"
+          else
+            echo "Skipping package installation test in local environment"
+          fi
+
+      - name: Analyze Package Size
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Package Analysis Report"
+          echo "======================"
+          pnpm run analyze
+          echo ""
+          echo "Build Size Report"
+          echo "================="
+          pnpm run size
+
+      - name: Verify Coverage Output
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Coverage Directory Contents:"
+          if [ -d "coverage" ]; then
+            echo "Coverage directory exists"
+            ls -la coverage/
+            echo ""
+            echo "Coverage file sizes:"
+            du -h coverage/*.json coverage/*.info 2>/dev/null || echo "WARNING: Some coverage files missing"
+          else
+            echo "ERROR: Coverage directory not found"
+            echo "Current directory contents:"
+            ls -la
+            echo "Searching for coverage files:"
+            find . -name "*.lcov" -o -name "coverage-final.json" 2>/dev/null || echo "No coverage files found"
+          fi
+
+      - name: Upload Coverage and Test Results
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('coverage/lcov.info') != ''
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-coverage
+          fail_ci_if_error: false
+          verbose: true
+          handle_no_reports_found: true
+          
+      - name: Upload Test Analytics
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('test-results.junit.xml') != ''
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./test-results.junit.xml
+          flags: unittests
+          verbose: true
+          
+      - name: Upload Bundle Stats
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('bundle-stats.json') != ''
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./bundle-stats.json
+          flags: bundler
+          name: codecov-bundle-analysis
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Upload Coverage Report (Fallback)
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('coverage/lcov.info') == '' && hashFiles('coverage/coverage-final.json') != ''
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-coverage-json
+          fail_ci_if_error: false
+          verbose: true
+          handle_no_reports_found: true
+
+  dependency-review:
+    name: Dependency Security Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.actor != 'nektos/act'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Perform Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+
+  code-security:
+    name: Code Security Analysis
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && github.actor != 'nektos/act'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Initialize Security Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: typescript, javascript
+
+      - name: Build for Security Analysis
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Run Security Analysis
+        uses: github/codeql-action/analyze@v3
