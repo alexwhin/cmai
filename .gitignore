@@ -15,3 +15,5 @@ playground/
 .claude/
 CLAUDE.md
 test-results.junit.xml
+bundle-stats.json
+dist/metafile-*.json

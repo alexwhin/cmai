@@ -1,6 +1,6 @@
 {
   "name": "cmai",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "commits that write themselves",
   "type": "module",
   "main": "./dist/cli.js",
@@ -53,6 +53,7 @@
     "release:ci": "release-it --ci",
     "analyze": "pnpm pack && tar -tzf *.tgz && rm -f *.tgz",
     "size": "du -sh dist/ 2>/dev/null || echo 'No dist directory'",
+    "bundle:stats": "pnpm run build && node -e \"const fs=require('fs'); const meta=JSON.parse(fs.readFileSync('dist/metafile-esm.json','utf8')); const stats={format:'esbuild-metafile',version:'1',bundleName:'cmai',plugin:{name:'tsup'},builtAt:new Date().toISOString(),assets:Object.entries(meta.outputs).map(([k,v])=>({name:k,size:v.bytes})),chunks:Object.entries(meta.outputs).map(([k,v])=>({id:k,names:[k],size:v.bytes,modules:Object.entries(v.inputs||{}).map(([m,i])=>({name:m,size:i.bytesInOutput}))}))};fs.writeFileSync('bundle-stats.json',JSON.stringify(stats,null,2))\" || echo 'Failed to generate bundle stats'",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "act": "./scripts/act.sh"

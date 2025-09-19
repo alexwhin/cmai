@@ -94,6 +94,63 @@ jobs:
       - name: Build Package
         run: pnpm run build
 
+      - name: Generate Bundle Stats
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Generating bundle statistics..."
+          if [ -f "dist/metafile-esm.json" ]; then
+            # Create initial bundle stats structure
+            node -e "
+              const fs = require('fs');
+              const meta = JSON.parse(fs.readFileSync('dist/metafile-esm.json', 'utf8'));
+              const stats = {
+                version: '1',
+                plugin: { name: 'codecov-bundle-analyzer' },
+                builtAt: new Date().toISOString(),
+                bundleName: 'cmai',
+                assets: [],
+                chunks: []
+              };
+              
+              // Process outputs
+              Object.entries(meta.outputs).forEach(([path, output]) => {
+                if (path.endsWith('.js')) {
+                  stats.assets.push({
+                    name: path,
+                    size: output.bytes
+                  });
+                  
+                  const modules = [];
+                  if (output.inputs) {
+                    Object.entries(output.inputs).forEach(([modPath, modInfo]) => {
+                      modules.push({
+                        name: modPath,
+                        size: modInfo.bytesInOutput || 0
+                      });
+                    });
+                  }
+                  
+                  stats.chunks.push({
+                    id: path,
+                    uniqueId: path,
+                    names: [path],
+                    size: output.bytes,
+                    modules: modules
+                  });
+                }
+              });
+              
+              fs.writeFileSync('bundle-stats.json', JSON.stringify(stats, null, 2));
+            "
+            
+            echo "Bundle stats generated:"
+            ls -la bundle-stats.json
+            echo "First 20 lines of bundle stats:"
+            head -20 bundle-stats.json
+          else
+            echo "WARNING: No metafile found, skipping bundle stats generation"
+          fi
+
       - name: Generate Coverage Report
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
         run: |
@@ -166,24 +223,44 @@ jobs:
             find . -name "*.lcov" -o -name "coverage-final.json" 2>/dev/null || echo "No coverage files found"
           fi
 
-      - name: Upload Coverage Report
+      - name: Upload Coverage and Test Results
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('coverage/lcov.info') != ''
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info,./test-results.junit.xml
+          files: ./coverage/lcov.info
           flags: unittests
           name: codecov-coverage
           fail_ci_if_error: false
           verbose: true
           handle_no_reports_found: true
+          
+      - name: Upload Test Analytics
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('test-results.junit.xml') != ''
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./test-results.junit.xml
+          flags: unittests
+          verbose: true
+          
+      - name: Upload Bundle Stats
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('bundle-stats.json') != ''
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./bundle-stats.json
+          flags: bundler
+          name: codecov-bundle-analysis
+          fail_ci_if_error: false
+          verbose: true
 
       - name: Upload Coverage Report (Fallback)
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('coverage/lcov.info') == '' && hashFiles('coverage/coverage-final.json') != ''
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage-final.json,./test-results.junit.xml
+          files: ./coverage/coverage-final.json
           flags: unittests
           name: codecov-coverage-json
           fail_ci_if_error: false
@@ -207,7 +284,7 @@ jobs:
     name: Code Security Analysis
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && github.actor != 'nektos/act'
-
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

@@ -12,9 +12,11 @@ export default defineConfig({
   treeshake: true,
   target: "node18",
   outDir: "dist",
-  silent: ["QUIET"],
-  onSuccess: () => {
+  silent: true,
+  metafile: true,
+  onSuccess: async () => {
     // Suppress specific bundler warnings that are not actionable
     console.log("Build completed successfully");
+    return;
   },
 });

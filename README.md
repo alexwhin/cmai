@@ -3,10 +3,11 @@
 [![NPM Version](https://img.shields.io/npm/v/cmai?logo=npm&color=cb3837)](https://www.npmjs.com/package/cmai)
 [![Codecov](https://img.shields.io/codecov/c/github/alexwhin/cmai?logo=codecov&color=f11f7a)](https://codecov.io/gh/alexwhin/cmai)
 [![Install Size](https://packagephobia.com/badge?p=cmai&color=2ea44f)](https://packagephobia.com/result?p=cmai)
-![Build](https://img.shields.io/github/actions/workflow/status/alexwhin/cmai/ci.yml?branch=main&color=2ea44f)
-![Supports OpenAI](https://img.shields.io/badge/api-openai-05a57e)
-![Supports Anthropic](https://img.shields.io/badge/api-anthropic-d87757)
-![Supports Ollama](https://img.shields.io/badge/api-ollama-f2f2f2)
+![Build](https://img.shields.io/github/actions/workflow/status/alexwhin/cmai/pipeline.yml?branch=main&color=2ea44f)
+[![dep](https://img.shields.io/librariesio/release/npm/cmai?color=2ea44f)](https://libraries.io/npm/cmai)
+![Supports OpenAI](https://img.shields.io/badge/⚡-openai-05a57e)
+![Supports Anthropic](https://img.shields.io/badge/⚡-anthropic-d87757)
+![Supports Ollama](https://img.shields.io/badge/⚡-ollama-f2f2f2)
 
 ![cmai terminal example](example.gif)
 
@@ -15,7 +16,7 @@
 **cmai** analyzes your staged git changes and generates commit messages following your projects existing commit standards. Dynamically creating contextually appropriate messages in multiple languages.
 
 - 🧩 Provider flexibility – supports OpenAI, Anthropic, and local Llama (via Ollama)
-- 🤖 Smart commit generation – Context-aware messages from staged changes and git history
+- ⚡ Smart commit generation – Context-aware messages from staged changes and git history
 - 📝 Multiple suggestions – generate and regenerate commit options until one fits
 - 🌍 Multi-language support – generate commits in 25+ languages
 - ⚡ Fast workflow – terminal, interactive, clipboard output modes with cross-platform support
