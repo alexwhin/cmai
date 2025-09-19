@@ -1,0 +1,201 @@
+name: Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+  actions: read
+
+jobs:
+  quality-checks:
+    name: Code Quality & Testing
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set Up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: Set Up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit Production Dependencies
+        run: pnpm audit --audit-level moderate --prod
+        continue-on-error: true
+
+      - name: Audit All Dependencies
+        run: pnpm audit --audit-level high
+        continue-on-error: true
+
+      - name: Run Linter
+        run: pnpm run lint
+
+      - name: Run Type Checking
+        run: pnpm run typecheck
+
+      - name: Check Unused Dependencies
+        run: pnpm run knip
+
+      - name: Run Tests
+        run: pnpm run test:ci
+
+      - name: Upload Test Results
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && hashFiles('test-results.junit.xml') != ''
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./test-results.junit.xml
+          flags: unittests
+          name: codecov-test-results
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Build Package
+        run: pnpm run build
+
+      - name: Generate Coverage Report
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Generating test coverage report..."
+          pnpm run test:coverage
+          echo "Coverage generation completed with exit code: $?"
+
+          # Verify coverage files were created
+          if [ -f "coverage/lcov.info" ]; then
+            echo "LCOV coverage file generated successfully"
+            wc -l coverage/lcov.info
+          else
+            echo "ERROR: LCOV coverage file not found"
+          fi
+
+          if [ -f "coverage/coverage-final.json" ]; then
+            echo "JSON coverage file generated successfully"
+            ls -lh coverage/coverage-final.json
+          else
+            echo "ERROR: JSON coverage file not found"
+          fi
+
+      - name: Test Local Installation
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          if [ "$ACT" != "true" ]; then
+            echo "Testing package installation..."
+            pnpm pack
+            npm install -g *.tgz
+            cmai --help
+            echo "Package installation test passed"
+          else
+            echo "Skipping package installation test in local environment"
+          fi
+
+      - name: Analyze Package Size
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Package Analysis Report"
+          echo "======================"
+          pnpm run analyze
+          echo ""
+          echo "Build Size Report"
+          echo "================="
+          pnpm run size
+
+      - name: Verify Coverage Output
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        run: |
+          echo "Coverage Directory Contents:"
+          if [ -d "coverage" ]; then
+            echo "Coverage directory exists"
+            ls -la coverage/
+            echo ""
+            echo "Coverage file sizes:"
+            du -h coverage/*.json coverage/*.info 2>/dev/null || echo "WARNING: Some coverage files missing"
+          else
+            echo "ERROR: Coverage directory not found"
+            echo "Current directory contents:"
+            ls -la
+            echo "Searching for coverage files:"
+            find . -name "*.lcov" -o -name "coverage-final.json" 2>/dev/null || echo "No coverage files found"
+          fi
+
+      - name: Upload Coverage Report
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('coverage/lcov.info') != ''
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-coverage
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Upload Coverage Report (Fallback)
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('coverage/lcov.info') == '' && hashFiles('coverage/coverage-final.json') != ''
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-coverage-json
+          fail_ci_if_error: false
+          verbose: true
+
+  dependency-review:
+    name: Dependency Security Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.actor != 'nektos/act'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Perform Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+
+  code-security:
+    name: Code Security Analysis
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && github.actor != 'nektos/act'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Initialize Security Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: typescript, javascript
+
+      - name: Build for Security Analysis
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Run Security Analysis
+        uses: github/codeql-action/analyze@v3

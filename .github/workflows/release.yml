@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Release type (for manual releases)"
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+  packages: write
+
+jobs:
+  release:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    if: |
+      github.ref == 'refs/heads/main' &&
+      !contains(github.event.head_commit.message, 'skip release')
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set Up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: Set Up Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create & Publish Release
+        if: env.ACT != 'true'
+        run: |
+          if [ "${{ github.event.inputs.release_type }}" != "auto" ] && [ "${{ github.event.inputs.release_type }}" != "" ]; then
+            pnpm release:ci --increment ${{ github.event.inputs.release_type }}
+          else
+            pnpm release:ci
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+
+      - name: Extract Release Version
+        id: release_version
+        if: env.ACT != 'true'
+        run: |
+          echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Generate Release Summary
+        if: env.ACT != 'true'
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Successfully released version: ${{ steps.release_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "npm package: https://www.npmjs.com/package/cmai/v/${{ steps.release_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Git tag: ${{ steps.release_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+
+  post-release-validation:
+    name: Post-Release Validation
+    needs: [release]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for npm Propagation
+        run: |
+          echo "Waiting for package to propagate to npm registry..."
+          sleep 30
+
+      - name: Verify Package Availability
+        run: |
+          echo "Verifying package availability on npm..."
+          npm view cmai --json || echo "Package verification pending..."
+
+      - name: Test Global Installation
+        run: |
+          echo "Testing global installation from npm"
+          if [ "$ACT" != "true" ]; then
+            npm install -g cmai@latest
+            cmai --version
+            cmai --help
+            echo "Global installation test passed"
+          else
+            echo "Skipping installation test in local environment"
+          fi
+        continue-on-error: true

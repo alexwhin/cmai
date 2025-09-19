@@ -1,0 +1,115 @@
+{
+  "name": "cmai",
+  "version": "0.1.4",
+  "description": "commits that write themselves",
+  "type": "module",
+  "main": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "cmai": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "locales",
+    "scripts",
+    "README.md"
+  ],
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "concurrently \"pnpm run build:watch\" \"pnpm run typecheck:watch\"",
+    "build:watch": "tsup --watch",
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "typecheck:watch": "tsc --noEmit --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "eslint . --fix",
+    "lint:watch": "nodemon --watch src --ext ts --exec 'pnpm run lint'",
+    "cmai": "node dist/cli.js",
+    "prepublishOnly": "pnpm run clean && pnpm run lint && pnpm run typecheck && pnpm run test:ci && pnpm run build",
+    "prepack": "pnpm run clean && pnpm run build",
+    "clean": "rm -rf dist *.tgz test-results.junit.xml",
+    "clean:all": "rm -rf dist coverage *.tgz test-results.junit.xml",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run",
+    "release:ci": "release-it --ci",
+    "analyze": "pnpm pack && tar -tzf *.tgz && rm -f *.tgz",
+    "size": "du -sh dist/ 2>/dev/null || echo 'No dist directory'",
+    "knip": "knip",
+    "knip:fix": "knip --fix",
+    "act": "./scripts/act.sh"
+  },
+  "keywords": [
+    "commit",
+    "git",
+    "ai",
+    "cli"
+  ],
+  "author": "Alex Whinfield",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexwhin/cmai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alexwhin/cmai/issues"
+  },
+  "homepage": "https://github.com/alexwhin/cmai#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "provenance": true
+  },
+  "dependencies": {
+    "@langchain/anthropic": "^0.3.27",
+    "@langchain/core": "^0.3.75",
+    "@langchain/ollama": "^0.2.4",
+    "@langchain/openai": "^0.6.11",
+    "ajv": "^8.17.1",
+    "chalk": "^5.6.2",
+    "commander": "^12.1.0",
+    "i18next": "^25.5.2",
+    "i18next-fs-backend": "^2.6.0",
+    "ora": "^8.2.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@release-it/conventional-changelog": "^10.0.1",
+    "@types/node": "^22.18.1",
+    "@types/prompts": "^2.4.9",
+    "@typescript-eslint/eslint-plugin": "^8.43.0",
+    "@typescript-eslint/parser": "^8.43.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.35.0",
+    "knip": "^5.63.1",
+    "nodemon": "^3.1.10",
+    "release-it": "^19.0.4",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@10.14.0"
+}

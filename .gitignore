@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.local
+.DS_Store
+*.log
+*.local
+.idea/
+*.swp
+*.swo
+*~
+playground/
+.cmai/
+.claude/
+CLAUDE.md
+test-results.junit.xml

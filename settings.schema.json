@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "cmai Settings Schema",
+  "description": "Configuration schema for AI Commit Message Generator",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for editor support"
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["OPENAI", "ANTHROPIC", "OLLAMA"],
+      "description": "The provider to use for generating commit messages"
+    },
+    "apiKey": {
+      "type": "string",
+      "description": "API key for API-based providers or server URL for local providers"
+    },
+    "model": {
+      "type": "string",
+      "description": "The specific model to use from the provider",
+      "examples": [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "gpt-4-turbo-preview",
+        "gpt-3.5-turbo",
+        "claude-3-5-sonnet-20241022",
+        "claude-3-5-haiku-20241022",
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229",
+        "llama2",
+        "codellama",
+        "mistral",
+        "mixtral"
+      ]
+    },
+    "maxCommitLength": {
+      "type": "integer",
+      "minimum": 50,
+      "maximum": 100,
+      "default": 72,
+      "description": "Maximum length for generated commit messages"
+    },
+    "usageMode": {
+      "type": "string",
+      "enum": ["TERMINAL", "COMMIT", "CLIPBOARD"],
+      "default": "CLIPBOARD",
+      "description": "How cmai is used: terminal output, direct commit, or clipboard"
+    },
+    "completionAction": {
+      "type": "string",
+      "enum": ["TERMINAL", "COMMIT", "CLIPBOARD"],
+      "description": "Deprecated: Use usageMode instead. Kept for backward compatibility"
+    },
+    "commitChoicesCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 5,
+      "description": "Number of commit message options to generate"
+    },
+    "redactSensitiveData": {
+      "type": "boolean",
+      "default": true,
+      "description": "Redact sensitive data like emails, API keys, passwords before sending to AI"
+    },
+    "customRules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "description": "Custom rules for commit message generation that will be sent to the AI"
+    },
+    "uiLanguage": {
+      "type": "string",
+      "enum": ["en"],
+      "default": "en",
+      "description": "Language for the tool's user interface"
+    },
+    "commitLanguage": {
+      "type": "string",
+      "enum": ["en"],
+      "default": "en",
+      "description": "Language for generated commit messages"
+    }
+  },
+  "required": ["provider", "model"],
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "provider": {
+        "const": "OLLAMA"
+      }
+    },
+    "required": ["provider"]
+  },
+  "then": {
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "pattern": "^https?://",
+        "description": "Server URL for Ollama (e.g., http://localhost:11434)",
+        "examples": ["http://localhost:11434", "http://192.168.1.100:11434"]
+      }
+    }
+  }
+}
