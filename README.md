@@ -1,12 +1,12 @@
 # cmai - commits that write themselves
 
-[![NPM version](https://img.shields.io/npm/v/cmai?logo=npm&color=cb3837)](https://www.npmjs.com/package/cmai)
+[![NPM Version](https://img.shields.io/npm/v/cmai?logo=npm&color=cb3837)](https://www.npmjs.com/package/cmai)
 [![Codecov](https://img.shields.io/codecov/c/github/alexwhin/cmai?logo=codecov&color=f11f7a)](https://codecov.io/gh/alexwhin/cmai)
-[![Install size](https://packagephobia.com/badge?p=cmai&color=2ea44f)](https://packagephobia.com/result?p=cmai)
+[![Install Size](https://packagephobia.com/badge?p=cmai&color=2ea44f)](https://packagephobia.com/result?p=cmai)
 ![Build](https://img.shields.io/github/actions/workflow/status/alexwhin/cmai/ci.yml?branch=main&color=2ea44f)
-![OpenAI](https://img.shields.io/badge/api-openai-05a57e)
-![Anthropic](https://img.shields.io/badge/api-anthropic-d87757)
-![Ollama](https://img.shields.io/badge/api-ollama-f2f2f2)
+![Supports OpenAI](https://img.shields.io/badge/api-openai-05a57e)
+![Supports Anthropic](https://img.shields.io/badge/api-anthropic-d87757)
+![Supports Ollama](https://img.shields.io/badge/api-ollama-f2f2f2)
 
 ![cmai terminal example](example.gif)
 
@@ -58,7 +58,7 @@ cmai --dryrun     # Preview prompts before sending
 
 ## Configuration
 
-> **⚠️ Warning**: Settings are stored on a per project basis under `.cmai/settings.json`. Since this directory contains your private key, please ensure it’s listed in your `.gitignore`.
+**⚠️ Warning**: Settings are stored on a per project basis under `.cmai/settings.json`. Since this directory contains your private key, please ensure it’s listed in your `.gitignore`.
 
 ```json
 {
@@ -67,7 +67,9 @@ cmai --dryrun     # Preview prompts before sending
   "commitChoicesCount": 8,
   "usageMode": "TERMINAL",
   "redactSensitiveData": true,
-  "customRules": ["all commit messages must be lowercase"],
+  "customRules": [
+    "all commit messages must be lowercase"
+  ],
 ```
 
 ### Environment Variables

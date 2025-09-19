@@ -3,7 +3,8 @@
     "commitMessage": "chore: release v${version}",
     "tagName": "v${version}",
     "requireUpstream": false,
-    "requireCleanWorkingDir": false
+    "requireCleanWorkingDir": true,
+    "push": true
   },
   "github": {
     "release": true,
