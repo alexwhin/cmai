@@ -1,6 +1,7 @@
-import { symbol } from "./ui-utils.js";
+import { symbol, errorWithDebug, message } from "./ui-utils.js";
 import { dim } from "./style.js";
 import { t } from "./i18n.js";
+import { exit } from "./system-utils.js";
 
 export abstract class BaseError extends Error {
   public readonly code: string;
@@ -384,4 +385,28 @@ function getErrorMessage(error: BaseError | Error): string {
   }
 
   return error instanceof Error ? error.message : t("errors.unknown", { message: "An unexpected error occurred" });
+}
+
+export function handleError(errorInstance: unknown, showDebug: boolean = false): void {
+
+  if (errorInstance instanceof Error && errorInstance.message.includes("API error")) {
+    let provider = "unknown";
+    if (errorInstance.message.includes("OpenAI")) {
+      provider = "openai";
+    } else if (errorInstance.message.includes("Anthropic")) {
+      provider = "anthropic";
+    }
+
+    errorWithDebug(formatError(errorInstance, provider, showDebug));
+  } else {
+    const errorMessage = errorInstance instanceof Error ? errorInstance.message : t("errors.unknown", { message: "Unknown error" });
+    message(errorMessage, { type: "error", variant: "title" });
+
+    if (showDebug && errorInstance instanceof Error && errorInstance.stack) {
+      message(dim("\n" + t("debug.stackTrace")));
+      message(dim(errorInstance.stack));
+    }
+  }
+
+  exit(1);
 }

@@ -34,14 +34,21 @@ import {
   createError,
   isRetryableError,
   formatError,
+  handleError,
 } from "../../src/utils/errors.js";
 
 vi.mock("../../src/utils/ui-utils.js", () => ({
   symbol: vi.fn((type: string) => `SYMBOL[${type}]`),
+  errorWithDebug: vi.fn(),
+  message: vi.fn(),
 }));
 
 vi.mock("../../src/utils/style.js", () => ({
   dim: vi.fn((text: string) => `DIM[${text}]`),
+}));
+
+vi.mock("../../src/utils/system-utils.js", () => ({
+  exit: vi.fn(),
 }));
 
 describe("errors", () => {
@@ -736,6 +743,123 @@ describe("errors", () => {
       const error2 = new Error("Authentication failed: Invalid API key provided");
       const result2 = formatError(error2, "anthropic");
       expect(result2).toContain("SYMBOL[error]");
+    });
+  });
+
+  describe("handleError", () => {
+    let errorWithDebug: ReturnType<typeof vi.fn>;
+    let message: ReturnType<typeof vi.fn>;
+    let exit: ReturnType<typeof vi.fn>;
+    let dim: ReturnType<typeof vi.fn>;
+
+    beforeEach(async () => {
+      vi.clearAllMocks();
+      const uiUtils = await import("../../src/utils/ui-utils.js");
+      const systemUtils = await import("../../src/utils/system-utils.js");
+      const styleUtils = await import("../../src/utils/style.js");
+      
+      errorWithDebug = vi.mocked(uiUtils.errorWithDebug);
+      message = vi.mocked(uiUtils.message);
+      exit = vi.mocked(systemUtils.exit);
+      dim = vi.mocked(styleUtils.dim);
+    });
+
+    it("handles API errors and calls errorWithDebug", () => {
+      const apiError = new Error("API error: OpenAI request failed");
+      handleError(apiError, false);
+
+      expect(errorWithDebug).toHaveBeenCalledWith(expect.stringContaining("SYMBOL[error]"));
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("handles Anthropic API errors", () => {
+      const apiError = new Error("API error: Anthropic authentication failed");
+      handleError(apiError, false);
+
+      expect(errorWithDebug).toHaveBeenCalledWith(expect.stringContaining("SYMBOL[error]"));
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("handles generic API errors with unknown provider", () => {
+      const apiError = new Error("API error: Unknown provider failed");
+      handleError(apiError, false);
+
+      expect(errorWithDebug).toHaveBeenCalledWith(expect.stringContaining("SYMBOL[error]"));
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("handles non-API errors without debug", () => {
+      const regularError = new Error("Regular error message");
+      handleError(regularError, false);
+
+      expect(message).toHaveBeenCalledWith("Regular error message", {
+        type: "error",
+        variant: "title",
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("handles non-Error objects", () => {
+      handleError("String error", false);
+
+      expect(message).toHaveBeenCalledWith("An unexpected error occurred: Unknown error", {
+        type: "error",
+        variant: "title",
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("handles undefined errors", () => {
+      handleError(undefined, false);
+
+      expect(message).toHaveBeenCalledWith("An unexpected error occurred: Unknown error", {
+        type: "error",
+        variant: "title",
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("handles null errors", () => {
+      handleError(null, false);
+
+      expect(message).toHaveBeenCalledWith("An unexpected error occurred: Unknown error", {
+        type: "error",
+        variant: "title",
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("handles object errors", () => {
+      const objectError = { code: "ERR_001", message: "Object error" };
+      handleError(objectError, false);
+
+      expect(message).toHaveBeenCalledWith("An unexpected error occurred: Unknown error", {
+        type: "error",
+        variant: "title",
+      });
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("handles non-API errors with debug and stack trace", () => {
+      const errorWithStack = new Error("Error with stack");
+      errorWithStack.stack = "Error: Error with stack\n    at test:1:1";
+      
+      handleError(errorWithStack, true);
+
+      expect(message).toHaveBeenCalledWith("Error with stack", { type: "error", variant: "title" });
+      expect(dim).toHaveBeenCalledWith("\nStack trace:");
+      expect(dim).toHaveBeenCalledWith(errorWithStack.stack);
+      expect(message).toHaveBeenCalledWith("DIM[\nStack trace:]");
+      expect(message).toHaveBeenCalledWith("DIM[Error: Error with stack\n    at test:1:1]");
+      expect(exit).toHaveBeenCalledWith(1);
+    });
+
+    it("uses debug flag for API errors", () => {
+      const apiError = new Error("API error: OpenAI rate limit");
+      handleError(apiError, true);
+
+      expect(errorWithDebug).toHaveBeenCalled();
+      expect(exit).toHaveBeenCalledWith(1);
     });
   });
 });

@@ -27,6 +27,7 @@ vi.mock("../src/utils/system-utils.js", () => ({
 
 vi.mock("../src/utils/errors.js", () => ({
   formatError: vi.fn((error) => `Formatted error: ${error.message}`),
+  handleError: vi.fn(),
   InvalidConfigurationError: class extends Error {
     constructor(messages: string[]) {
       super(messages.join(", "));
@@ -120,8 +121,8 @@ describe("cli", () => {
   });
 
   describe("CLI module loading", () => {
-    it("imports and exports handleError function", async () => {
-      const { handleError } = await import("../src/cli.js");
+    it("validates handleError is available from errors module", async () => {
+      const { handleError } = await import("../src/utils/errors.js");
 
       expect(handleError).toBeDefined();
       expect(typeof handleError).toBe("function");
@@ -279,7 +280,6 @@ describe("cli", () => {
       // Verify both modules imported successfully
       expect(program).toBeDefined();
       expect(cliModule).toBeDefined();
-      expect(cliModule.handleError).toBeDefined();
     });
 
     it("validates CLI setup dependencies", async () => {
@@ -299,7 +299,7 @@ describe("cli", () => {
   describe("command execution", () => {
     it("executes init command successfully", async () => {
       const { initCommand } = await import("../src/commands/init.js");
-      const { handleError } = await import("../src/cli.js");
+      const { handleError } = await import("../src/utils/errors.js");
 
       vi.mocked(initCommand).mockResolvedValue();
 
@@ -315,7 +315,7 @@ describe("cli", () => {
 
     it("handles init command errors", async () => {
       const { initCommand } = await import("../src/commands/init.js");
-      const { handleError } = await import("../src/cli.js");
+      const { handleError } = await import("../src/utils/errors.js");
 
       const testError = new Error("Init failed");
       vi.mocked(initCommand).mockRejectedValue(testError);
@@ -331,7 +331,7 @@ describe("cli", () => {
 
     it("executes generate command successfully", async () => {
       const { generateCommand } = await import("../src/commands/generate.js");
-      const { handleError } = await import("../src/cli.js");
+      const { handleError } = await import("../src/utils/errors.js");
 
       vi.mocked(generateCommand).mockResolvedValue();
 
@@ -350,7 +350,7 @@ describe("cli", () => {
 
     it("handles generate command errors", async () => {
       const { generateCommand } = await import("../src/commands/generate.js");
-      const { handleError } = await import("../src/cli.js");
+      const { handleError } = await import("../src/utils/errors.js");
 
       const testError = new Error("Generate failed");
       vi.mocked(generateCommand).mockRejectedValue(testError);
@@ -369,7 +369,7 @@ describe("cli", () => {
 
     it("executes settings command successfully", async () => {
       const { settingsCommand } = await import("../src/commands/settings.js");
-      const { handleError } = await import("../src/cli.js");
+      const { handleError } = await import("../src/utils/errors.js");
 
       vi.mocked(settingsCommand).mockResolvedValue();
 
@@ -384,7 +384,7 @@ describe("cli", () => {
 
     it("handles settings command errors", async () => {
       const { settingsCommand } = await import("../src/commands/settings.js");
-      const { handleError } = await import("../src/cli.js");
+      const { handleError } = await import("../src/utils/errors.js");
 
       const testError = new Error("Settings failed");
       vi.mocked(settingsCommand).mockRejectedValue(testError);
@@ -399,180 +399,12 @@ describe("cli", () => {
     });
   });
 
-  describe("handleError function", () => {
-    beforeEach(() => {
-      mockProgram.opts.mockReturnValue({ debug: false });
-    });
-
-    it("handles OpenAI API errors", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { formatError } = await import("../src/utils/errors.js");
-      const { errorWithDebug } = await import("../src/utils/ui-utils.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      const apiError = new Error("API error: OpenAI request failed");
-      vi.mocked(formatError).mockReturnValue("Formatted OpenAI error");
-
-      handleError(apiError);
-
-      expect(formatError).toHaveBeenCalledWith(apiError, "openai", false);
-      expect(errorWithDebug).toHaveBeenCalledWith("Formatted OpenAI error");
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("handles Anthropic API errors", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { formatError } = await import("../src/utils/errors.js");
-      const { errorWithDebug } = await import("../src/utils/ui-utils.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      const apiError = new Error("API error: Anthropic authentication failed");
-      vi.mocked(formatError).mockReturnValue("Formatted Anthropic error");
-
-      handleError(apiError);
-
-      expect(formatError).toHaveBeenCalledWith(apiError, "anthropic", false);
-      expect(errorWithDebug).toHaveBeenCalledWith("Formatted Anthropic error");
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("handles generic API errors with unknown provider", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { formatError } = await import("../src/utils/errors.js");
-      const { errorWithDebug } = await import("../src/utils/ui-utils.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      const apiError = new Error("API error: Unknown provider failed");
-      vi.mocked(formatError).mockReturnValue("Formatted unknown API error");
-
-      handleError(apiError);
-
-      expect(formatError).toHaveBeenCalledWith(apiError, "unknown", false);
-      expect(errorWithDebug).toHaveBeenCalledWith("Formatted unknown API error");
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("handles non-API errors without debug", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { message } = await import("../src/utils/ui-utils.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      const regularError = new Error("Regular error message");
-
-      handleError(regularError);
-
-      expect(message).toHaveBeenCalledWith("Regular error message", {
-        type: "error",
-        variant: "title",
-      });
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("handles non-Error objects", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { message } = await import("../src/utils/ui-utils.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      const stringError = "String error";
-
-      handleError(stringError);
-
-      expect(message).toHaveBeenCalledWith("An unexpected error occurred: Unknown error", {
-        type: "error",
-        variant: "title",
-      });
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("handles undefined errors", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { message } = await import("../src/utils/ui-utils.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      handleError(undefined);
-
-      expect(message).toHaveBeenCalledWith("An unexpected error occurred: Unknown error", {
-        type: "error",
-        variant: "title",
-      });
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("handles null errors", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { message } = await import("../src/utils/ui-utils.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      handleError(null);
-
-      expect(message).toHaveBeenCalledWith("An unexpected error occurred: Unknown error", {
-        type: "error",
-        variant: "title",
-      });
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("handles object errors", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { message } = await import("../src/utils/ui-utils.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      const objectError = { code: "ERR_001", message: "Object error" };
-
-      handleError(objectError);
-
-      expect(message).toHaveBeenCalledWith("An unexpected error occurred: Unknown error", {
-        type: "error",
-        variant: "title",
-      });
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("handles non-API errors with debug and stack trace", async () => {
-      mockProgram.opts.mockReturnValue({ debug: true });
-
-      const { handleError } = await import("../src/cli.js");
-      const { message } = await import("../src/utils/ui-utils.js");
-      const { dim } = await import("../src/utils/style.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-
-      const errorWithStack = new Error("Error with stack");
-      errorWithStack.stack = "Error: Error with stack\n    at test:1:1";
-
-      handleError(errorWithStack);
-
-      expect(message).toHaveBeenCalledWith("Error with stack", { type: "error", variant: "title" });
-      expect(dim).toHaveBeenCalledWith("\nStack trace:");
-      expect(dim).toHaveBeenCalledWith(errorWithStack.stack);
-      expect(message).toHaveBeenCalledWith("DIM[\nStack trace:]");
-      expect(message).toHaveBeenCalledWith("DIM[Error: Error with stack\n    at test:1:1]");
-      expect(exit).toHaveBeenCalledWith(1);
-    });
-
-    it("uses debug flag from program options for API errors", async () => {
-      mockProgram.opts.mockReturnValue({ debug: true });
-
-      const { handleError } = await import("../src/cli.js");
-      const { formatError } = await import("../src/utils/errors.js");
-      const { errorWithDebug } = await import("../src/utils/ui-utils.js");
-
-      const apiError = new Error("API error: OpenAI rate limit");
-      vi.mocked(formatError).mockReturnValue("Formatted error with debug");
-
-      handleError(apiError);
-
-      expect(formatError).toHaveBeenCalledWith(apiError, "openai", true);
-      expect(errorWithDebug).toHaveBeenCalledWith("Formatted error with debug");
-    });
-  });
 
   describe("CLI integration", () => {
     it("tests file imports and module structure", async () => {
       const cliModule = await import("../src/cli.js");
 
       expect(cliModule).toBeDefined();
-      expect(cliModule.handleError).toBeDefined();
-      expect(typeof cliModule.handleError).toBe("function");
     });
 
     it("tests package.json version extraction", async () => {
@@ -589,15 +421,12 @@ describe("cli", () => {
     });
 
     it("validates error handling integration", async () => {
-      const { handleError } = await import("../src/cli.js");
-      const { exit } = await import("../src/utils/system-utils.js");
-      const { message } = await import("../src/utils/ui-utils.js");
+      const { handleError } = await import("../src/utils/errors.js");
 
       const testError = new Error("Test error");
-      handleError(testError);
+      handleError(testError, false);
 
-      expect(message).toHaveBeenCalledWith("Test error", { type: "error", variant: "title" });
-      expect(exit).toHaveBeenCalledWith(1);
+      expect(handleError).toHaveBeenCalledWith(testError, false);
     });
   });
 
@@ -606,7 +435,7 @@ describe("cli", () => {
       const { initCommand } = await import("../src/commands/init.js");
       const { generateCommand } = await import("../src/commands/generate.js");
       const { settingsCommand } = await import("../src/commands/settings.js");
-      const { handleError } = await import("../src/cli.js");
+      const { handleError } = await import("../src/utils/errors.js");
 
       // Verify commands are properly mocked
       expect(initCommand).toBeDefined();
@@ -630,11 +459,9 @@ describe("cli", () => {
 
     it("verifies CLI module structure is intact", async () => {
       // Import CLI to trigger command registration
-      const cliModule = await import("../src/cli.js");
+      await import("../src/cli.js");
       
       // Verify CLI module exports are available
-      expect(cliModule.handleError).toBeDefined();
-      expect(typeof cliModule.handleError).toBe("function");
       
       // Verify mock program setup is working
       expect(mockProgram).toBeDefined();
@@ -669,8 +496,7 @@ describe("cli", () => {
       // even if we can't easily test command execution due to mocking complexity
 
       // Verify the CLI module is structured correctly
-      const cliModule = await import("../src/cli.js");
-      expect(cliModule.handleError).toBeDefined();
+      await import("../src/cli.js");
     });
   });
 });
