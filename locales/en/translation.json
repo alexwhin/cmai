@@ -170,7 +170,8 @@
   "providers": {
     "openai": "OpenAI",
     "anthropic": "Anthropic",
-    "ollama": "Ollama"
+    "ollama": "Ollama",
+    "gemini": "Gemini"
   },
   "usageModes": {
     "interactive": {
@@ -280,7 +281,31 @@
     "detailedErrors": "Detailed errors: {{errors}}"
   },
   "languages": {
-    "english": "English"
+    "english": "English",
+    "spanish": "Español",
+    "french": "Français",
+    "german": "Deutsch",
+    "italian": "Italiano",
+    "portuguese": "Português",
+    "dutch": "Dutch",
+    "russian": "Русский",
+    "japanese": "日本語",
+    "chinese": "中文",
+    "korean": "한국어",
+    "arabic": "العربية",
+    "hindi": "हिन्दी",
+    "turkish": "Türkçe",
+    "polish": "Polski",
+    "swedish": "Svenska",
+    "danish": "Dansk",
+    "norwegian": "Norsk",
+    "finnish": "Suomi",
+    "czech": "Čeština",
+    "hebrew": "עברית",
+    "thai": "ไทย",
+    "vietnamese": "Tiếng Việt",
+    "indonesian": "Bahasa Indonesia",
+    "ukrainian": "Українська"
   },
   "updates": {
     "available": "Update available: v{{currentVersion}} → v{{latestVersion}} run {{command}}"

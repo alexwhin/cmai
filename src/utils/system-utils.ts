@@ -6,7 +6,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { setImmediate } from "node:timers";
-import { CannotCopyEmptyTextError, ClipboardError, SystemError, InvalidConfigurationError } from "./errors.js";
+import {
+  CannotCopyEmptyTextError,
+  ClipboardError,
+  SystemError,
+  InvalidConfigurationError,
+} from "./errors.js";
 import { isString, isNonEmptyString, isRecord, hasProperty, isJSONString } from "./guards.js";
 import { t } from "./i18n.js";
 import { SYSTEM, SECURITY } from "../constants.js";
@@ -576,21 +581,25 @@ export function redactSensitiveData(text: string): string {
 
 export function getPackageVersion(): string {
   const currentDirectory = dirname(fileURLToPath(import.meta.url));
-  const packageJsonPath = join(currentDirectory, "../../package.json");
-  
+  const packageJsonPath = join(currentDirectory, "../package.json");
+
   try {
     const packageJsonContent = readFileSync(packageJsonPath, "utf-8");
-    
+
     if (!isJSONString(packageJsonContent)) {
       throw new InvalidConfigurationError([t("errors.configuration.invalidPackageJson")]);
     }
-    
+
     const packageJson = JSON.parse(packageJsonContent);
-    
-    if (!isRecord(packageJson) || !hasProperty(packageJson, "version") || !isString(packageJson.version)) {
+
+    if (
+      !isRecord(packageJson) ||
+      !hasProperty(packageJson, "version") ||
+      !isString(packageJson.version)
+    ) {
       throw new InvalidConfigurationError([t("errors.configuration.invalidPackageJson")]);
     }
-    
+
     return packageJson.version;
   } catch (error) {
     if (error instanceof InvalidConfigurationError) {

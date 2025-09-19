@@ -68,6 +68,7 @@ export const getProviderChoices = () => [
   { title: getProviderDisplayName(Provider.OPENAI), value: Provider.OPENAI },
   { title: getProviderDisplayName(Provider.ANTHROPIC), value: Provider.ANTHROPIC },
   { title: getProviderDisplayName(Provider.OLLAMA), value: Provider.OLLAMA },
+  { title: getProviderDisplayName(Provider.GEMINI), value: Provider.GEMINI },
 ];
 
 export const VALIDATION = {

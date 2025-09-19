@@ -108,28 +108,28 @@ async function executeTerminalAction(context: CommitActionContext): Promise<void
 
   const reportData = createReportData(configuration, provider);
   const items = await generateReport(selectedMessage, gitContext, usageMode, reportData);
-  
+
   message("", { items });
   message(t("messages.terminalCommitReady"), { type: "success", variant: "title" });
-  
+
   const commitCommand = `git commit -m "${selectedMessage.replace(/"/g, '\\"')}"`;
-  
+
   const readline = await import("node:readline");
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
-  
+
   const answer = await new Promise<string>((resolve) => {
     rl.question("  ", (input) => {
       resolve(input);
     });
-    
+
     rl.write(commitCommand);
   });
 
   rl.close();
-  
+
   if (answer.trim()) {
     try {
       const { execSync } = await import("node:child_process");
@@ -143,7 +143,7 @@ async function executeTerminalAction(context: CommitActionContext): Promise<void
       exit(1);
     }
   }
-  
+
   exit();
 }
 

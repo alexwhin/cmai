@@ -9,6 +9,7 @@ import {
 } from "../utils/errors.js";
 import { t } from "../utils/i18n.js";
 import { getProviderDefaultUrl } from "./configuration.js";
+import { getProviderDisplayName } from "../utils/formatting.js";
 
 interface ModelInfo {
   id: string;
@@ -54,6 +55,9 @@ export async function getAvailableModels(provider: Provider, apiKey: string): Pr
           break;
         case Provider.OLLAMA:
           models = await fetchOllamaModels(apiKey);
+          break;
+        case Provider.GEMINI:
+          models = await fetchGeminiModels(apiKey);
           break;
         default:
           throw new UnknownProviderError(provider);
@@ -108,7 +112,7 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new InvalidAPIKeyError("OpenAI");
+        throw new InvalidAPIKeyError(getProviderDisplayName(Provider.OPENAI));
       }
       throw new NetworkError(
         t("errors.api.requestFailed", { message: `${response.status} ${response.statusText}` })
@@ -121,7 +125,7 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
       !hasProperty(responseData, "data") ||
       !isArray(responseData.data)
     ) {
-      throw new InvalidResponseFormatError("OpenAI");
+      throw new InvalidResponseFormatError(getProviderDisplayName(Provider.OPENAI));
     }
 
     const gptModels: ModelInfo[] = [];
@@ -147,7 +151,7 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
     gptModels.sort((a, b) => a.id.localeCompare(b.id));
 
     if (gptModels.length === 0) {
-      throw new NoSuitableModelsError("OpenAI");
+      throw new NoSuitableModelsError(getProviderDisplayName(Provider.OPENAI));
     }
 
     return gptModels;
@@ -170,7 +174,7 @@ async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new InvalidAPIKeyError("Anthropic");
+        throw new InvalidAPIKeyError(getProviderDisplayName(Provider.ANTHROPIC));
       }
       throw new NetworkError(
         t("errors.api.requestFailed", { message: `${response.status} ${response.statusText}` })
@@ -183,7 +187,7 @@ async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
       !hasProperty(responseData, "data") ||
       !isArray(responseData.data)
     ) {
-      throw new InvalidResponseFormatError("Anthropic");
+      throw new InvalidResponseFormatError(getProviderDisplayName(Provider.ANTHROPIC));
     }
 
     const claudeModels: ModelInfo[] = [];
@@ -203,7 +207,7 @@ async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
     claudeModels.sort((a, b) => a.id.localeCompare(b.id));
 
     if (claudeModels.length === 0) {
-      throw new NoSuitableModelsError("Anthropic");
+      throw new NoSuitableModelsError(getProviderDisplayName(Provider.ANTHROPIC));
     }
 
     return claudeModels;
@@ -237,7 +241,7 @@ async function fetchOllamaModels(apiKey: string): Promise<ModelInfo[]> {
       !hasProperty(responseData, "models") ||
       !isArray(responseData.models)
     ) {
-      throw new InvalidResponseFormatError("Ollama");
+      throw new InvalidResponseFormatError(getProviderDisplayName(Provider.OLLAMA));
     }
 
     const ollamaModels: ModelInfo[] = [];
@@ -256,10 +260,92 @@ async function fetchOllamaModels(apiKey: string): Promise<ModelInfo[]> {
     ollamaModels.sort((a, b) => a.id.localeCompare(b.id));
 
     if (ollamaModels.length === 0) {
-      throw new NoSuitableModelsError("Ollama");
+      throw new NoSuitableModelsError(getProviderDisplayName(Provider.OLLAMA));
     }
 
     return ollamaModels;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new NetworkError(t("errors.api.generationFailed"));
+  }
+}
+
+async function fetchGeminiModels(apiKey: string): Promise<ModelInfo[]> {
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new InvalidAPIKeyError(getProviderDisplayName(Provider.GEMINI));
+      }
+      throw new NetworkError(
+        t("errors.api.requestFailed", { message: `${response.status} ${response.statusText}` })
+      );
+    }
+
+    const responseData: unknown = await response.json();
+    if (
+      !isRecord(responseData) ||
+      !hasProperty(responseData, "models") ||
+      !isArray(responseData.models)
+    ) {
+      throw new InvalidResponseFormatError(getProviderDisplayName(Provider.GEMINI));
+    }
+
+    const geminiModels: ModelInfo[] = [];
+    const preferredModels = [
+      "gemini-1.5-pro",
+      "gemini-1.5-flash", 
+      "gemini-1.5-flash-8b",
+      "gemini-2.0-flash-exp",
+      "gemini-pro",
+    ];
+
+    for (const item of responseData.models) {
+      if (
+        isRecord(item) && 
+        hasProperty(item, "name") && 
+        isString(item.name) &&
+        hasProperty(item, "supportedGenerationMethods") &&
+        isArray(item.supportedGenerationMethods)
+      ) {
+        const modelName = item.name.replace("models/", "");
+        
+        if (
+          item.supportedGenerationMethods.includes("generateContent") &&
+          preferredModels.includes(modelName)
+        ) {
+          const displayName = hasProperty(item, "displayName") && isString(item.displayName) ? item.displayName : modelName;
+          
+          geminiModels.push({
+            id: modelName,
+            name: displayName,
+          });
+        }
+      }
+    }
+
+    geminiModels.sort((a, b) => {
+      const aIndex = preferredModels.indexOf(a.id);
+      const bIndex = preferredModels.indexOf(b.id);
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+      return a.id.localeCompare(b.id);
+    });
+
+    if (geminiModels.length === 0) {
+      throw new NoSuitableModelsError(getProviderDisplayName(Provider.GEMINI));
+    }
+
+    return geminiModels;
   } catch (error) {
     if (error instanceof Error) {
       throw error;

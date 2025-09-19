@@ -82,6 +82,7 @@
   "dependencies": {
     "@langchain/anthropic": "^0.3.28",
     "@langchain/core": "^0.3.77",
+    "@langchain/google-genai": "^0.2.18",
     "@langchain/ollama": "^0.2.4",
     "@langchain/openai": "^0.6.13",
     "ajv": "^8.17.1",

@@ -2,6 +2,7 @@ export enum Provider {
   OPENAI = "OPENAI",
   ANTHROPIC = "ANTHROPIC",
   OLLAMA = "OLLAMA",
+  GEMINI = "GEMINI",
 }
 
 export enum UsageMode {

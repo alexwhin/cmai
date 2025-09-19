@@ -10,9 +10,9 @@ import { t } from "./i18n.js";
 import { FILE_SYSTEM, DEFAULTS } from "../constants.js";
 import { isJSONString, isValidConfig, isString } from "./guards.js";
 
-const CONFIG_FILE_PATH = join(FILE_SYSTEM.CONFIG_DIRECTORY, FILE_SYSTEM.CONFIG_FILENAME);
-const SCHEMA_FILE_PATH = FILE_SYSTEM.SCHEMA_FILENAME;
-const SCHEMA_URL = FILE_SYSTEM.SCHEMA_URL;
+const { CONFIG_DIRECTORY, CONFIG_FILENAME, SCHEMA_FILENAME, SCHEMA_URL } = FILE_SYSTEM;
+const CONFIG_FILE_PATH = join(CONFIG_DIRECTORY, CONFIG_FILENAME);
+const SCHEMA_FILE_PATH = SCHEMA_FILENAME;
 
 let cachedConfiguration: Config | null = null;
 let schemaValidator: ValidateFunction | null = null;

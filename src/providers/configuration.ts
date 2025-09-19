@@ -22,6 +22,9 @@ export const PROVIDER_CONFIGS: Record<Provider, ProviderConfig> = {
     authType: ProviderAuthType.URL,
     defaultUrl: "http://localhost:11434",
   },
+  [Provider.GEMINI]: {
+    authType: ProviderAuthType.API_KEY,
+  },
 };
 
 export function getProviderAuthType(provider: Provider): ProviderAuthType {

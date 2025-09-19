@@ -10,18 +10,20 @@ import type {
 
 describe("types/index", () => {
   describe("Provider enum", () => {
-    it("should have OPENAI, ANTHROPIC, and OLLAMA values", () => {
+    it("should have OPENAI, ANTHROPIC, OLLAMA, and GEMINI values", () => {
       expect(Provider.OPENAI).toBe("OPENAI");
       expect(Provider.ANTHROPIC).toBe("ANTHROPIC");
       expect(Provider.OLLAMA).toBe("OLLAMA");
+      expect(Provider.GEMINI).toBe("GEMINI");
     });
 
     it("should contain all expected providers", () => {
       const providers = Object.values(Provider);
-      expect(providers).toHaveLength(3);
+      expect(providers).toHaveLength(4);
       expect(providers).toContain("OPENAI");
       expect(providers).toContain("ANTHROPIC");
       expect(providers).toContain("OLLAMA");
+      expect(providers).toContain("GEMINI");
     });
   });
 

@@ -10,7 +10,7 @@
     },
     "provider": {
       "type": "string",
-      "enum": ["OPENAI", "ANTHROPIC", "OLLAMA"],
+      "enum": ["OPENAI", "ANTHROPIC", "OLLAMA", "GEMINI"],
       "description": "The provider to use for generating commit messages"
     },
     "apiKey": {
@@ -32,7 +32,11 @@
         "llama2",
         "codellama",
         "mistral",
-        "mixtral"
+        "mixtral",
+        "gemini-1.5-pro",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
+        "gemini-2.0-flash-exp"
       ]
     },
     "maxCommitLength": {

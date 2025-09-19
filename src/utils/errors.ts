@@ -76,7 +76,7 @@ export class ConfigurationError extends BaseError {
 
 export class ConfigurationNotFoundError extends ConfigurationError {
   constructor(path?: string) {
-    const message = path ? t("errors.configuration.notFound", { path }) : t("errors.configuration.notFoundNoPath");
+    const message = path? t("errors.configuration.notFound", { path }): t("errors.configuration.notFoundNoPath");
     super(message, "CONFIG_NOT_FOUND");
   }
 }
@@ -163,7 +163,7 @@ export class NetworkError extends APIError {
 
 export class ConnectionRefusedError extends NetworkError {
   constructor(provider?: string) {
-    const message = provider ? t("errors.network.connectionRefusedWithProvider", { provider }) : t("errors.network.connectionRefusedNoProvider");
+    const message = provider? t("errors.network.connectionRefusedWithProvider", { provider }): t("errors.network.connectionRefusedNoProvider");
     super(message);
   }
 }
@@ -177,7 +177,7 @@ export class TimeoutError extends NetworkError {
 
 export class ServerNotFoundError extends NetworkError {
   constructor(provider?: string) {
-    const message = provider ? t("errors.network.serverNotFoundWithProvider", { provider }) : t("errors.network.serverNotFoundNoProvider");
+    const message = provider? t("errors.network.serverNotFoundWithProvider", { provider }): t("errors.network.serverNotFoundNoProvider");
     super(message);
   }
 }
@@ -384,11 +384,10 @@ function getErrorMessage(error: BaseError | Error): string {
     return error.message;
   }
 
-  return error instanceof Error ? error.message : t("errors.unknown", { message: "An unexpected error occurred" });
+  return error instanceof Error? error.message: t("errors.unknown", { message: "An unexpected error occurred" });
 }
 
 export function handleError(errorInstance: unknown, showDebug: boolean = false): void {
-
   if (errorInstance instanceof Error && errorInstance.message.includes("API error")) {
     let provider = "unknown";
     if (errorInstance.message.includes("OpenAI")) {
@@ -399,7 +398,8 @@ export function handleError(errorInstance: unknown, showDebug: boolean = false):
 
     errorWithDebug(formatError(errorInstance, provider, showDebug));
   } else {
-    const errorMessage = errorInstance instanceof Error ? errorInstance.message : t("errors.unknown", { message: "Unknown error" });
+    const errorMessage =
+      errorInstance instanceof Error? errorInstance.message: t("errors.unknown", { message: "Unknown error" });
     message(errorMessage, { type: "error", variant: "title" });
 
     if (showDebug && errorInstance instanceof Error && errorInstance.stack) {

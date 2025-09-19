@@ -14,9 +14,9 @@ import { Provider } from "../src/types/index.js";
 
 describe("constants", () => {
   describe("getProviderChoices", () => {
-    it("contains OpenAI, Anthropic, and Ollama providers", () => {
+    it("contains OpenAI, Anthropic, Ollama, and Gemini providers", () => {
       const providerChoices = getProviderChoices();
-      expect(providerChoices).toHaveLength(3);
+      expect(providerChoices).toHaveLength(4);
       expect(providerChoices[0]).toEqual({
         title: "OpenAI",
         value: Provider.OPENAI,
@@ -28,6 +28,10 @@ describe("constants", () => {
       expect(providerChoices[2]).toEqual({
         title: "Ollama",
         value: Provider.OLLAMA,
+      });
+      expect(providerChoices[3]).toEqual({
+        title: "Gemini",
+        value: Provider.GEMINI,
       });
     });
   });

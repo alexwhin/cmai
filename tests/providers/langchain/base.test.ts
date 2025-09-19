@@ -180,7 +180,7 @@ docs: update documentation`;
       vi.spyOn(provider["model"], "invoke").mockRejectedValue(new Error("API error"));
 
       await expect(provider.generateCandidates(mockContext)).rejects.toThrow(
-        "Provider error: API error"
+        "An unexpected error occurred: API error"
       );
     });
 
@@ -188,7 +188,7 @@ docs: update documentation`;
       vi.spyOn(provider["model"], "invoke").mockResolvedValue("Invalid response");
 
       await expect(provider.generateCandidates(mockContext)).rejects.toThrow(
-        "Provider error: Failed to parse commit messages"
+        "Failed to parse commit messages"
       );
     });
   });

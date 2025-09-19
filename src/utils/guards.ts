@@ -31,6 +31,10 @@ export function isValidEmail(value: unknown): value is string {
   return emailRegex.test(value) && !value.includes("..");
 }
 
+export function isBoolean(value: unknown): value is boolean {
+  return typeof value === "boolean";
+}
+
 export function isNumber(value: unknown): value is number {
   return typeof value === "number" && !Number.isNaN(value);
 }
@@ -62,7 +66,7 @@ export function isValidConfig(value: unknown): value is Config {
     (!hasProperty(value, "commitChoicesCount") || isPositiveNumber(value.commitChoicesCount)) &&
     (!hasProperty(value, "usageMode") || isValidUsageMode(value.usageMode)) &&
     (!hasProperty(value, "redactSensitiveData") ||
-      typeof value.redactSensitiveData === "boolean") &&
+      isBoolean(value.redactSensitiveData)) &&
     (!hasProperty(value, "customRules") ||
       (isArray(value.customRules) && value.customRules.every(isString)))
   );

@@ -10,7 +10,7 @@ import {
 } from "./formatting.js";
 import { exit } from "./system-utils.js";
 import ora, { type Ora } from "ora";
-import { isString } from "./guards.js";
+import { isString, isArray } from "./guards.js";
 import { Provider, UsageMode, Config, Language } from "../types/index.js";
 import { getAvailableModels, validateAndFetchModels } from "../providers/models.js";
 import { t } from "./i18n.js";
@@ -380,7 +380,7 @@ export function message(content: string, options?: MessageOptions): void {
     !content &&
     options?.type &&
     options?.items &&
-    Array.isArray(options.items) &&
+    isArray(options.items) &&
     options.items.length > 0
   ) {
     MessageRenderer.renderItemsMessage(options as MessageOptions & { items: FilePathItem[] });

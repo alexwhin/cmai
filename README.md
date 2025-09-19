@@ -1,22 +1,22 @@
 # cmai - commits that write themselves
 
-![Supports OpenAI](https://img.shields.io/badge/⚡-openai-05a57e)
-![Supports Anthropic](https://img.shields.io/badge/⚡-anthropic-d87757)
 ![Supports Ollama](https://img.shields.io/badge/⚡-ollama-f2f2f2)
+![Supports Anthropic](https://img.shields.io/badge/⚡-anthropic-d87757)
+![Supports OpenAI](https://img.shields.io/badge/⚡-openai-05a57e)
+![Supports Gemini](https://img.shields.io/badge/⚡-gemini-8c8efe)
 [![NPM Version](https://img.shields.io/npm/v/cmai?logo=npm&color=f11f7a)](https://www.npmjs.com/package/cmai)
 [![Codecov](https://img.shields.io/codecov/c/github/alexwhin/cmai?logo=codecov&color=f11f7a)](https://codecov.io/gh/alexwhin/cmai)
 [![Install Size](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpackagephobia.com%2Fv2%2Fapi.json%3Fp%3Dcmai&query=$.install.pretty&label=size&color=2ea44f)](https://packagephobia.com/result?p=cmai)
 ![Build](https://img.shields.io/github/actions/workflow/status/alexwhin/cmai/pipeline.yml?branch=main&color=2ea44f)
-[![Dependencies](https://img.shields.io/librariesio/release/npm/cmai?color=2ea44f&label=dep)](https://libraries.io/npm/cmai)
 
-![cmai terminal example](example.gif)
+![cmai terminal example](assets/demo.gif)
 
 ## What It Does
 
 **cmai** analyzes your staged git changes and generates commit messages following your projects existing commit standards. Dynamically creating contextually appropriate messages in multiple languages.
 
-- 🧩 Provider flexibility – supports OpenAI, Anthropic, and local Llama (via Ollama)
-- ⚡ Smart commit generation – Context-aware messages from staged changes and git history
+- ⚡ Provider flexibility – supports OpenAI, Anthropic, and local Llama (via Ollama)
+- 🧐 Smart commit generation – Context-aware messages from staged changes and git history
 - 🏃 Fast workflow – terminal, interactive, clipboard output modes with cross-platform support
 - ⚙️ Rule enforcement – define per-project or global rules to keep commits consistent
 - 📝 Multiple suggestions – generate and regenerate commit options until one fits
@@ -47,6 +47,8 @@ cmai settings     # Modify configuration
 cmai              # Generate commit messages
 cmai --dryrun     # Preview prompts before sending
 ```
+
+![cmai settings example](assets/settings-rules.png)
 
 ### Usage Modes
 

@@ -8,13 +8,13 @@ import {
   formatLanguageRule,
 } from "./prompts.js";
 import {
-  APIError,
   InvalidResponseObjectError,
   MissingCommitsArrayError,
   EmptyCommitsArrayError,
   NoValidCommitMessagesError,
   FailedToParseCommitMessagesError,
   TimeoutError,
+  createError,
 } from "../../utils/errors.js";
 import { DEFAULTS, API_TIMEOUT_MS, GIT } from "../../constants.js";
 import { message } from "../../utils/ui-utils.js";
@@ -72,32 +72,27 @@ export abstract class LangChainBaseProvider implements AIProvider {
       let content: string = "";
       if (isString(response)) {
         content = response;
-      } else if (isRecord(response)) {
-        if (hasProperty(response, "content")) {
-          if (isString(response.content)) {
-            content = response.content;
-          } else if (isArray(response.content)) {
-            content = (response.content as unknown[])
-              .map((item) => {
-                if (isString(item)) {
-                  return item;
-                }
-                if (isRecord(item) && hasProperty(item, "text") && isString(item.text)) {
-                  return item.text;
-                }
-                return "";
-              })
-              .join("");
-          }
+      } else if (isRecord(response) && hasProperty(response, "content")) {
+        if (isString(response.content)) {
+          content = response.content;
+        } else if (isArray(response.content)) {
+          content = (response.content as unknown[])
+            .map((item) => {
+              if (isString(item)) {
+                return item;
+              }
+              if (isRecord(item) && hasProperty(item, "text") && isString(item.text)) {
+                return item.text;
+              }
+              return "";
+            })
+            .join("");
         }
       }
 
       return this.parseTextResponse(content);
     } catch (error) {
-      if (error instanceof Error) {
-        throw new APIError(`Provider error: ${error.message}`);
-      }
-      throw new APIError("Provider error: Unknown error occurred");
+      throw createError(error, "Provider error: Unknown error occurred");
     }
   }
 
@@ -114,7 +109,7 @@ export abstract class LangChainBaseProvider implements AIProvider {
       languageRule: formatLanguageRule(this.commitLanguage),
     };
 
-    const template = getCommitGenerationPrompt().template;
+    const { template } = getCommitGenerationPrompt();
     let prompt = isString(template) ? template : String(template);
 
     Object.entries(formatted).forEach(([key, value]) => {
@@ -218,25 +213,27 @@ export abstract class LangChainBaseProvider implements AIProvider {
         throw new FailedToParseCommitMessagesError(error instanceof Error ? error : undefined);
       }
 
-      return lines.map((line: string) => {
-        let cleanedLine = line;
-        if (
-          (line.startsWith('"') && line.endsWith('"')) ||
-          (line.startsWith("'") && line.endsWith("'"))
-        ) {
-          cleanedLine = line.slice(1, -1);
-        }
+      return lines
+        .map((line: string) => {
+          let cleanedLine = line;
+          if (
+            (line.startsWith('"') && line.endsWith('"')) ||
+            (line.startsWith("'") && line.endsWith("'"))
+          ) {
+            cleanedLine = line.slice(1, -1);
+          }
 
-        if (cleanedLine.endsWith(".")) {
-          cleanedLine = cleanedLine.slice(0, -1);
-        }
-        
-        if (cleanedLine.endsWith(",")) {
-          cleanedLine = cleanedLine.slice(0, -1);
-        }
+          if (cleanedLine.endsWith(".")) {
+            cleanedLine = cleanedLine.slice(0, -1);
+          }
 
-        return cleanedLine.trim();
-      }).filter((commit: string) => commit.length <= this.maxCommitLength);
+          if (cleanedLine.endsWith(",")) {
+            cleanedLine = cleanedLine.slice(0, -1);
+          }
+
+          return cleanedLine.trim();
+        })
+        .filter((commit: string) => commit.length <= this.maxCommitLength);
     }
   }
 

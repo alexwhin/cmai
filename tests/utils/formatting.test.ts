@@ -12,6 +12,8 @@ vi.mock("../../src/utils/i18n.js", () => ({
     const translations: Record<string, string> = {
       "providers.openai": "OpenAI",
       "providers.anthropic": "Anthropic",
+      "providers.ollama": "Ollama",
+      "providers.gemini": "Gemini",
       "usageModes.interactive.name": "Create commit",
       "usageModes.interactive.description": "Generate message and create commit interactively",
       "usageModes.automatic.name": "Copy to clipboard",
@@ -19,6 +21,30 @@ vi.mock("../../src/utils/i18n.js", () => ({
       "usageModes.terminal.name": "Terminal output",
       "usageModes.terminal.description": "Output commit command to terminal for editing",
       "languages.english": "English",
+      "languages.spanish": "Español",
+      "languages.french": "Français",
+      "languages.german": "Deutsch",
+      "languages.italian": "Italiano",
+      "languages.portuguese": "Português",
+      "languages.dutch": "Dutch",
+      "languages.russian": "Русский",
+      "languages.japanese": "日本語",
+      "languages.chinese": "中文",
+      "languages.korean": "한국어",
+      "languages.arabic": "العربية",
+      "languages.hindi": "हिन्दी",
+      "languages.turkish": "Türkçe",
+      "languages.polish": "Polski",
+      "languages.swedish": "Svenska",
+      "languages.danish": "Dansk",
+      "languages.norwegian": "Norsk",
+      "languages.finnish": "Suomi",
+      "languages.czech": "Čeština",
+      "languages.hebrew": "עברית",
+      "languages.thai": "ไทย",
+      "languages.vietnamese": "Tiếng Việt",
+      "languages.indonesian": "Bahasa Indonesia",
+      "languages.ukrainian": "Українська",
     };
     return translations[key] || key;
   }),
@@ -82,7 +108,7 @@ describe("getLanguageDisplayName", () => {
     expect(getLanguageDisplayName(Language.DE)).toBe("Deutsch");
     expect(getLanguageDisplayName(Language.IT)).toBe("Italiano");
     expect(getLanguageDisplayName(Language.PT)).toBe("Português");
-    expect(getLanguageDisplayName(Language.NL)).toBe("Nederlands");
+    expect(getLanguageDisplayName(Language.NL)).toBe("Dutch");
     expect(getLanguageDisplayName(Language.RU)).toBe("Русский");
     expect(getLanguageDisplayName(Language.JA)).toBe("日本語");
     expect(getLanguageDisplayName(Language.ZH)).toBe("中文");

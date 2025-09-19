@@ -11,6 +11,8 @@ export function getProviderDisplayName(provider: string | Provider): string {
       return t("providers.anthropic");
     case Provider.OLLAMA.toLowerCase():
       return t("providers.ollama");
+    case Provider.GEMINI.toLowerCase():
+      return t("providers.gemini");
     default:
       return provider.toString();
   }
@@ -45,53 +47,53 @@ export function getLanguageDisplayName(language: Language): string {
     case Language.EN:
       return t("languages.english");
     case Language.ES:
-      return "Español";
+      return t("languages.spanish");
     case Language.FR:
-      return "Français";
+      return t("languages.french");
     case Language.DE:
-      return "Deutsch";
+      return t("languages.german");
     case Language.IT:
-      return "Italiano";
+      return t("languages.italian");
     case Language.PT:
-      return "Português";
+      return t("languages.portuguese");
     case Language.NL:
-      return "Nederlands";
+      return t("languages.dutch");
     case Language.RU:
-      return "Русский";
+      return t("languages.russian");
     case Language.JA:
-      return "日本語";
+      return t("languages.japanese");
     case Language.ZH:
-      return "中文";
+      return t("languages.chinese");
     case Language.KO:
-      return "한국어";
+      return t("languages.korean");
     case Language.AR:
-      return "العربية";
+      return t("languages.arabic");
     case Language.HI:
-      return "हिन्दी";
+      return t("languages.hindi");
     case Language.TR:
-      return "Türkçe";
+      return t("languages.turkish");
     case Language.PL:
-      return "Polski";
+      return t("languages.polish");
     case Language.SV:
-      return "Svenska";
+      return t("languages.swedish");
     case Language.DA:
-      return "Dansk";
+      return t("languages.danish");
     case Language.NO:
-      return "Norsk";
+      return t("languages.norwegian");
     case Language.FI:
-      return "Suomi";
+      return t("languages.finnish");
     case Language.CS:
-      return "Čeština";
+      return t("languages.czech");
     case Language.HE:
-      return "עברית";
+      return t("languages.hebrew");
     case Language.TH:
-      return "ไทย";
+      return t("languages.thai");
     case Language.VI:
-      return "Tiếng Việt";
+      return t("languages.vietnamese");
     case Language.ID:
-      return "Bahasa Indonesia";
+      return t("languages.indonesian");
     case Language.UK:
-      return "Українська";
+      return t("languages.ukrainian");
     default:
       return language;
   }

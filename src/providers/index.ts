@@ -2,8 +2,25 @@ import { Provider, Config, AIProvider } from "../types/index.js";
 import { LangChainOpenAIProvider } from "./langchain/openai.js";
 import { LangChainAnthropicProvider } from "./langchain/anthropic.js";
 import { LangChainOllamaProvider } from "./langchain/ollama.js";
+import { LangChainGeminiProvider } from "./langchain/gemini.js";
 import { UnknownProviderError } from "../utils/errors.js";
 import { DEFAULTS } from "../constants.js";
+
+type ProviderConstructor = new (
+  apiKey: string,
+  model: string,
+  maxCommitLength: number,
+  commitChoicesCount: number,
+  customRules: string[] | undefined,
+  commitLanguage: string
+) => AIProvider;
+
+const PROVIDER_MAP: Record<Provider, ProviderConstructor> = {
+  [Provider.OPENAI]: LangChainOpenAIProvider,
+  [Provider.ANTHROPIC]: LangChainAnthropicProvider,
+  [Provider.OLLAMA]: LangChainOllamaProvider,
+  [Provider.GEMINI]: LangChainGeminiProvider,
+};
 
 export function createProvider(
   provider: Provider,
@@ -14,40 +31,20 @@ export function createProvider(
   customRules?: string[],
   commitLanguage: string = DEFAULTS.COMMIT_LANGUAGE
 ): AIProvider {
-  switch (provider) {
-    case Provider.OPENAI:
-      return new LangChainOpenAIProvider(
-        apiKey,
-        model,
-        maxCommitLength,
-        commitChoicesCount,
-        customRules,
-        commitLanguage
-      );
+  const ProviderClass = PROVIDER_MAP[provider];
 
-    case Provider.ANTHROPIC:
-      return new LangChainAnthropicProvider(
-        apiKey,
-        model,
-        maxCommitLength,
-        commitChoicesCount,
-        customRules,
-        commitLanguage
-      );
-
-    case Provider.OLLAMA:
-      return new LangChainOllamaProvider(
-        apiKey,
-        model,
-        maxCommitLength,
-        commitChoicesCount,
-        customRules,
-        commitLanguage
-      );
-
-    default:
-      throw new UnknownProviderError(provider);
+  if (!ProviderClass) {
+    throw new UnknownProviderError(provider);
   }
+
+  return new ProviderClass(
+    apiKey,
+    model,
+    maxCommitLength,
+    commitChoicesCount,
+    customRules,
+    commitLanguage
+  );
 }
 
 export function createProviderFromConfig(configuration: Config): AIProvider {
