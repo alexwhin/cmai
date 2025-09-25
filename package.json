@@ -1,6 +1,6 @@
 {
   "name": "cmai",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "commits that write themselves",
   "type": "module",
   "main": "./dist/cli.js",
