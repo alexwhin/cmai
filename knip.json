@@ -3,7 +3,7 @@
   "project": ["src/**/*.ts"],
   "ignore": ["dist/**", "coverage/**", "*.config.{js,ts}", "**/*.test.ts"],
   "includeEntryExports": true,
-  "ignoreBinaries": ["tar", "du"],
+  "ignoreBinaries": ["tar", "du", "sonar-scanner"],
   "rules": {
     "files": "error",
     "dependencies": "error",

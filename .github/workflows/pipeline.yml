@@ -234,7 +234,7 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           handle_no_reports_found: true
-          
+
       - name: Upload Test Analytics
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('test-results.junit.xml') != ''
         uses: codecov/test-results-action@v1
@@ -243,7 +243,7 @@ jobs:
           files: ./test-results.junit.xml
           flags: unittests
           verbose: true
-          
+
       - name: Upload Bundle Stats
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x' && github.actor != 'nektos/act' && hashFiles('bundle-stats.json') != ''
         uses: codecov/codecov-action@v5
@@ -284,7 +284,7 @@ jobs:
     name: Code Security Analysis
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && github.actor != 'nektos/act'
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

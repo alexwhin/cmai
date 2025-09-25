@@ -56,7 +56,9 @@
     "bundle:stats": "pnpm run build && node -e \"const fs=require('fs'); const meta=JSON.parse(fs.readFileSync('dist/metafile-esm.json','utf8')); const stats={format:'esbuild-metafile',version:'1',bundleName:'cmai',plugin:{name:'tsup'},builtAt:new Date().toISOString(),assets:Object.entries(meta.outputs).map(([k,v])=>({name:k,size:v.bytes})),chunks:Object.entries(meta.outputs).map(([k,v])=>({id:k,names:[k],size:v.bytes,modules:Object.entries(v.inputs||{}).map(([m,i])=>({name:m,size:i.bytesInOutput}))}))};fs.writeFileSync('bundle-stats.json',JSON.stringify(stats,null,2))\" || echo 'Failed to generate bundle stats'",
     "knip": "knip",
     "knip:fix": "knip --fix",
-    "act": "./scripts/act.sh"
+    "act": "./scripts/act.sh",
+    "sonar": "sonar-scanner",
+    "sonar:local": "sonar-scanner -Dsonar.token=${SONAR_TOKEN:-$(<.env.local grep SONAR_TOKEN | cut -d'=' -f2)}"
   },
   "keywords": [
     "commit",

@@ -18,3 +18,7 @@ CLAUDE.md
 test-results.junit.xml
 bundle-stats.json
 dist/metafile-*.json
+
+# SonarCloud
+.scannerwork/
+.sonar/

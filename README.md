@@ -88,17 +88,65 @@ CMAI_COMMIT_LANGUAGE=es
 
 ## Development
 
+### Prerequisites
+
+- `node` >=`18.0.0`
+- `pnpm` `10.14.0` (`corepack enable` to install)
+- SonarScanner (optional): `brew install sonar-scanner`
+- Docker/OrbStack (optional): for testing GitHub Actions locally
+
+### Setup
+
 ```bash
 pnpm install
-pnpm dev        # Watch mode
-pnpm test       # Run tests
-pnpm build      # Production build
+
+# Development mode (auto-rebuild on changes)
+pnpm dev
+```
+
+### Available Commands
+
+#### Core Development
+
+```bash
+pnpm dev              # Watch mode with concurrent build & typecheck
+pnpm build            # Production build
+pnpm test             # Run tests in watch mode
+pnpm test:ci          # Run tests once (for CI)
+pnpm test:coverage    # Generate coverage report (80% threshold)
+```
+
+#### Code Quality
+
+```bash
+pnpm lint             # Check code style
+pnpm lint:fix         # Auto-fix style issues
+pnpm typecheck        # TypeScript type checking
+pnpm knip             # Find unused code/dependencies
+pnpm knip:fix         # Remove unused dependencies
+pnpm pre-push         # Run all quality checks before pushing
+pnpm quality:check    # Alias for pre-push
+```
+
+#### Analysis & Debugging
+
+```bash
+pnpm sonar:local      # SonarCloud (requires SONAR_TOKEN & Automatic Analysis disabled)
+pnpm bundle:stats     # Analyze bundle size
+pnpm analyze          # Package content analysis
+pnpm act              # Test GitHub Actions locally (needs Docker)
+```
+
+#### Release Process
+
+```bash
+pnpm release          # Interactive release with version bump & changelog
+pnpm release:dry      # Preview release without publishing
 ```
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome.
-If you’d like to get involved, please open an issue or submit a pull request to help improve the project.
+Contributions, issues, and feature requests are welcome. If you would like to get involved, please open an issue or submit a pull request to help improve the project.
 
 ## License
 
