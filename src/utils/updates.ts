@@ -4,7 +4,7 @@ import { get } from "node:https";
 import { IncomingMessage } from "node:http";
 import { FILE_SYSTEM } from "../constants.js";
 import { ensureConfigurationDirectory } from "./config.js";
-import { isRecord, hasProperty, isString, isJSONString } from "./guards.js";
+import { isRecord, hasProperty, isString, isJSONString, isNumber, isBoolean } from "./guards.js";
 import { message } from "./ui-utils.js";
 import { t } from "./i18n.js";
 
@@ -89,9 +89,9 @@ async function loadCache(): Promise<UpdateCache | null> {
       hasProperty(parsed, "lastChecked") &&
       hasProperty(parsed, "latestVersion") &&
       hasProperty(parsed, "notified") &&
-      typeof parsed.lastChecked === "number" &&
+      isNumber(parsed.lastChecked) &&
       isString(parsed.latestVersion) &&
-      typeof parsed.notified === "boolean"
+      isBoolean(parsed.notified)
     ) {
       return parsed as unknown as UpdateCache;
     }

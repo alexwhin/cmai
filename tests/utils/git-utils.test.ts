@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const mockExecuteCommand = vi.fn();
+const mockExecFilePromise = vi.fn();
 
-vi.mock("node:child_process");
 vi.mock("node:util", () => ({
   promisify: vi.fn(() => mockExecuteCommand),
 }));
@@ -21,6 +21,21 @@ describe("git-utils", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockExecuteCommand.mockReset();
+    mockExecFilePromise.mockReset();
+    vi.resetModules();
+    
+    vi.doMock("node:child_process", () => ({
+      exec: vi.fn(),
+      execFile: vi.fn(),
+    }));
+    vi.doMock("node:util", () => ({
+      promisify: vi.fn(() => mockExecuteCommand),
+    }));
+  });
+  
+  afterEach(() => {
+    vi.doUnmock("node:child_process");
+    vi.doUnmock("node:util");
   });
 
   // Core Git Commands
@@ -166,8 +181,25 @@ describe("git-utils", () => {
   });
 
   describe("commit", () => {
+    beforeEach(() => {
+      vi.resetModules();
+    });
+
     it("commits with message", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      vi.doMock("node:child_process", () => ({
+        exec: vi.fn(),
+        execFile: vi.fn((cmd, args, opts, callback) => {
+          if (typeof opts === "function") {
+            callback = opts;
+          }
+          callback(null, "", "2 files changed, 10 insertions(+)");
+        }),
+      }));
+      vi.doMock("node:util", () => ({
+        promisify: vi.fn(() => mockExecFilePromise),
+      }));
+      
+      mockExecFilePromise.mockResolvedValue({
         stdout: "",
         stderr: "2 files changed, 10 insertions(+)",
       });
@@ -175,54 +207,121 @@ describe("git-utils", () => {
       const { commit } = await import("../../src/utils/git-utils.js");
       await expect(commit("test: add tests")).resolves.toBeUndefined();
 
-      expect(mockExecuteCommand).toHaveBeenCalledWith('git commit -m "test: add tests"');
+      expect(mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", "test: add tests"], {
+        shell: false,
+        windowsHide: true,
+      });
+      
+      vi.doUnmock("node:child_process");
+      vi.doUnmock("node:util");
     });
 
     it("commits with allow-empty flag", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      vi.doMock("node:child_process", () => ({
+        exec: vi.fn(),
+        execFile: vi.fn(),
+      }));
+      vi.doMock("node:util", () => ({
+        promisify: vi.fn(() => mockExecFilePromise),
+      }));
+      
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { commit } = await import("../../src/utils/git-utils.js");
       await expect(commit("chore: empty commit", true)).resolves.toBeUndefined();
 
-      expect(mockExecuteCommand).toHaveBeenCalledWith(
-        'git commit -m "chore: empty commit" --allow-empty'
-      );
+      expect(mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", "chore: empty commit", "--allow-empty"], {
+        shell: false,
+        windowsHide: true,
+      });
+      
+      vi.doUnmock("node:child_process");
+      vi.doUnmock("node:util");
     });
 
     it("throws on real errors", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "fatal: error occurred" });
+      vi.doMock("node:child_process", () => ({
+        exec: vi.fn(),
+        execFile: vi.fn(),
+      }));
+      vi.doMock("node:util", () => ({
+        promisify: vi.fn(() => mockExecFilePromise),
+      }));
+      
+      const error = new Error("Command failed");
+      (error as unknown as { stderr: string }).stderr = "fatal: error occurred";
+      mockExecFilePromise.mockRejectedValue(error);
 
       const { commit } = await import("../../src/utils/git-utils.js");
       await expect(commit("test")).rejects.toThrow("fatal: error occurred");
+      
+      vi.doUnmock("node:child_process");
+      vi.doUnmock("node:util");
     });
 
     it("handles commit with quotes in message", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      vi.doMock("node:child_process", () => ({
+        exec: vi.fn(),
+        execFile: vi.fn(),
+      }));
+      vi.doMock("node:util", () => ({
+        promisify: vi.fn(() => mockExecFilePromise),
+      }));
+      
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { commit } = await import("../../src/utils/git-utils.js");
       await commit('feat: add "quoted" feature');
 
-      expect(mockExecuteCommand).toHaveBeenCalledWith('git commit -m "feat: add "quoted" feature"');
+      expect(mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", 'feat: add "quoted" feature'], {
+        shell: false,
+        windowsHide: true,
+      });
+      
+      vi.doUnmock("node:child_process");
+      vi.doUnmock("node:util");
     });
 
     it("ignores acceptable stderr messages", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      vi.doMock("node:child_process", () => ({
+        exec: vi.fn(),
+        execFile: vi.fn(),
+      }));
+      vi.doMock("node:util", () => ({
+        promisify: vi.fn(() => mockExecFilePromise),
+      }));
+      
+      mockExecFilePromise.mockResolvedValue({
         stdout: "",
         stderr: "create mode 100644 new-file.txt",
       });
 
       const { commit } = await import("../../src/utils/git-utils.js");
       await expect(commit("feat: add new file")).resolves.not.toThrow();
+      
+      vi.doUnmock("node:child_process");
+      vi.doUnmock("node:util");
     });
 
     it("throws on real git errors", async () => {
-      mockExecuteCommand.mockResolvedValue({
-        stdout: "",
-        stderr: "error: spec 'nonexistent' did not match any file(s)",
+      vi.doMock("node:child_process", () => ({
+        exec: vi.fn(),
+        execFile: vi.fn(),
+      }));
+      vi.doMock("node:util", () => ({
+        promisify: vi.fn(() => mockExecFilePromise),
+      }));
+      
+      mockExecFilePromise.mockRejectedValue({
+        message: "Command failed",
+        stderr: "error: spec 'nonexistent' did not match any file(s)"
       });
 
       const { commit } = await import("../../src/utils/git-utils.js");
       await expect(commit("test")).rejects.toThrow();
+      
+      vi.doUnmock("node:child_process");
+      vi.doUnmock("node:util");
     });
   });
 

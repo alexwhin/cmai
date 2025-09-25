@@ -1,5 +1,6 @@
 import { Provider, UsageMode, Language } from "../types/index.js";
 import { t } from "./i18n.js";
+import { sortByKey } from "../utils/api-helpers.js";
 
 export function getProviderDisplayName(provider: string | Provider): string {
   const normalizedProvider = provider.toLowerCase();
@@ -42,61 +43,37 @@ export function getUsageModeChoices(): Array<{
   ];
 }
 
+const LANGUAGE_KEYS: Record<Language, string> = {
+  [Language.EN]: "languages.english",
+  [Language.ES]: "languages.spanish",
+  [Language.FR]: "languages.french",
+  [Language.DE]: "languages.german",
+  [Language.IT]: "languages.italian",
+  [Language.PT]: "languages.portuguese",
+  [Language.NL]: "languages.dutch",
+  [Language.RU]: "languages.russian",
+  [Language.JA]: "languages.japanese",
+  [Language.ZH]: "languages.chinese",
+  [Language.KO]: "languages.korean",
+  [Language.AR]: "languages.arabic",
+  [Language.HI]: "languages.hindi",
+  [Language.TR]: "languages.turkish",
+  [Language.PL]: "languages.polish",
+  [Language.SV]: "languages.swedish",
+  [Language.DA]: "languages.danish",
+  [Language.NO]: "languages.norwegian",
+  [Language.FI]: "languages.finnish",
+  [Language.CS]: "languages.czech",
+  [Language.HE]: "languages.hebrew",
+  [Language.TH]: "languages.thai",
+  [Language.VI]: "languages.vietnamese",
+  [Language.ID]: "languages.indonesian",
+  [Language.UK]: "languages.ukrainian",
+};
+
 export function getLanguageDisplayName(language: Language): string {
-  switch (language) {
-    case Language.EN:
-      return t("languages.english");
-    case Language.ES:
-      return t("languages.spanish");
-    case Language.FR:
-      return t("languages.french");
-    case Language.DE:
-      return t("languages.german");
-    case Language.IT:
-      return t("languages.italian");
-    case Language.PT:
-      return t("languages.portuguese");
-    case Language.NL:
-      return t("languages.dutch");
-    case Language.RU:
-      return t("languages.russian");
-    case Language.JA:
-      return t("languages.japanese");
-    case Language.ZH:
-      return t("languages.chinese");
-    case Language.KO:
-      return t("languages.korean");
-    case Language.AR:
-      return t("languages.arabic");
-    case Language.HI:
-      return t("languages.hindi");
-    case Language.TR:
-      return t("languages.turkish");
-    case Language.PL:
-      return t("languages.polish");
-    case Language.SV:
-      return t("languages.swedish");
-    case Language.DA:
-      return t("languages.danish");
-    case Language.NO:
-      return t("languages.norwegian");
-    case Language.FI:
-      return t("languages.finnish");
-    case Language.CS:
-      return t("languages.czech");
-    case Language.HE:
-      return t("languages.hebrew");
-    case Language.TH:
-      return t("languages.thai");
-    case Language.VI:
-      return t("languages.vietnamese");
-    case Language.ID:
-      return t("languages.indonesian");
-    case Language.UK:
-      return t("languages.ukrainian");
-    default:
-      return language;
-  }
+  const key = LANGUAGE_KEYS[language];
+  return key ? t(key) : language;
 }
 
 export function getLanguageChoices(): Array<{ title: string; value: Language }> {
@@ -104,13 +81,15 @@ export function getLanguageChoices(): Array<{ title: string; value: Language }> 
   const english = Language.EN;
   const otherLanguages = languages.filter((lang) => lang !== english);
 
-  const sortedOthers = otherLanguages.sort((a, b) => {
-    const nameA = getLanguageDisplayName(a);
-    const nameB = getLanguageDisplayName(b);
-    return nameA.localeCompare(nameB);
-  });
+  const languagesWithNames = otherLanguages.map(lang => ({
+    lang,
+    name: getLanguageDisplayName(lang)
+  }));
+  
+  const sortedOthers = sortByKey(languagesWithNames, "name");
+  const sortedLanguages = sortedOthers.map(item => item.lang);
 
-  const orderedLanguages = [english, ...sortedOthers];
+  const orderedLanguages = [english, ...sortedLanguages];
 
   return orderedLanguages.map((lang) => ({
     title: getLanguageDisplayName(lang),
@@ -120,4 +99,13 @@ export function getLanguageChoices(): Array<{ title: string; value: Language }> 
 
 export function getUILanguageChoices(): Array<{ title: string; value: Language }> {
   return [{ title: getLanguageDisplayName(Language.EN), value: Language.EN }];
+}
+
+export function getProviderChoices(): Array<{ title: string; value: Provider }> {
+  return [
+    { title: getProviderDisplayName(Provider.OPENAI), value: Provider.OPENAI },
+    { title: getProviderDisplayName(Provider.ANTHROPIC), value: Provider.ANTHROPIC },
+    { title: getProviderDisplayName(Provider.OLLAMA), value: Provider.OLLAMA },
+    { title: getProviderDisplayName(Provider.GEMINI), value: Provider.GEMINI },
+  ];
 }

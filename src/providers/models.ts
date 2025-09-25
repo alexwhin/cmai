@@ -2,14 +2,17 @@ import { Provider } from "../types/index.js";
 import { isRecord, hasProperty, isArray, isString } from "../utils/guards.js";
 import {
   UnknownProviderError,
-  InvalidAPIKeyError,
-  NetworkError,
-  InvalidResponseFormatError,
   NoSuitableModelsError,
+  InvalidAPIKeyError,
 } from "../utils/errors.js";
-import { t } from "../utils/i18n.js";
 import { getProviderDefaultUrl } from "./configuration.js";
 import { getProviderDisplayName } from "../utils/formatting.js";
+import {
+  handleApiError,
+  validateApiResponse,
+  validateResponseStructure,
+  sortById,
+} from "../utils/api-helpers.js";
 
 interface ModelInfo {
   id: string;
@@ -21,13 +24,23 @@ interface CachedModels {
   timestamp: number;
 }
 
+interface ModelFilterOptions {
+  includePatterns?: string[];
+  excludePatterns?: string[];
+  allowList?: string[];
+}
+
 const MODEL_CACHE_TTL = 5 * 60 * 1000;
 const modelCache = new Map<string, CachedModels>();
 const pendingRequests = new Map<string, Promise<ModelInfo[]>>();
 
 function getCacheKey(provider: Provider, apiKey: string): string {
-  const keyPrefix = apiKey.substring(0, 8);
-  return `${provider}-${keyPrefix}`;
+  let hash = 0;
+  for (let i = 0; i < apiKey.length; i++) {
+    const char = apiKey.charCodeAt(i);
+    hash = ((hash << 5) - hash + char) | 0;
+  }
+  return `${provider}-${Math.abs(hash).toString(16)}`;
 }
 
 export async function getAvailableModels(provider: Provider, apiKey: string): Promise<ModelInfo[]> {
@@ -96,10 +109,88 @@ export async function validateAndFetchModels(
     return { isValid: true, models };
   } catch (error) {
     if (error instanceof InvalidAPIKeyError) {
-      return { isValid: false, error: error as Error };
+      return { isValid: false, error };
     }
     return { isValid: false, error: error as Error };
   }
+}
+
+function filterModels(models: ModelInfo[], options: ModelFilterOptions): ModelInfo[] {
+  return models.filter(model => {
+    const modelId = model.id.toLowerCase();
+    
+    if (options.allowList && options.allowList.length > 0) {
+      return options.allowList.includes(model.id);
+    }
+    
+    if (options.includePatterns) {
+      const hasInclude = options.includePatterns.some(pattern => 
+        modelId.includes(pattern.toLowerCase())
+      );
+      if (!hasInclude) {
+return false;
+}
+    }
+    
+    if (options.excludePatterns) {
+      const hasExclude = options.excludePatterns.some(pattern => 
+        modelId.includes(pattern.toLowerCase())
+      );
+      if (hasExclude) {
+return false;
+}
+    }
+    
+    return true;
+  });
+}
+
+function parseModelsFromResponse(
+  data: unknown[],
+  idField: string = "id",
+  nameField?: string
+): ModelInfo[] {
+  const models: ModelInfo[] = [];
+  
+  for (const item of data) {
+    if (isRecord(item) && hasProperty(item, idField) && isString(item[idField])) {
+      const id = item[idField];
+      let name = id;
+      
+      if (nameField && hasProperty(item, nameField) && isString(item[nameField])) {
+        name = item[nameField];
+      }
+      
+      models.push({ id, name });
+    }
+  }
+  
+  return models;
+}
+
+function parseGeminiModels(data: unknown[]): ModelInfo[] {
+  const models: ModelInfo[] = [];
+  
+  for (const item of data) {
+    if (
+      isRecord(item) && 
+      hasProperty(item, "name") && 
+      isString(item.name) &&
+      hasProperty(item, "supportedGenerationMethods") &&
+      isArray(item.supportedGenerationMethods) &&
+      item.supportedGenerationMethods.includes("generateContent")
+    ) {
+      const modelName = item.name.replace("models/", "");
+      const displayName = hasProperty(item, "displayName") && isString(item.displayName)? item.displayName: modelName;
+      
+      models.push({
+        id: modelName,
+        name: displayName,
+      });
+    }
+  }
+  
+  return models;
 }
 
 async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
@@ -110,56 +201,25 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
       },
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new InvalidAPIKeyError(getProviderDisplayName(Provider.OPENAI));
-      }
-      throw new NetworkError(
-        t("errors.api.requestFailed", { message: `${response.status} ${response.statusText}` })
-      );
-    }
+    validateApiResponse(response, Provider.OPENAI);
 
     const responseData: unknown = await response.json();
-    if (
-      !isRecord(responseData) ||
-      !hasProperty(responseData, "data") ||
-      !isArray(responseData.data)
-    ) {
-      throw new InvalidResponseFormatError(getProviderDisplayName(Provider.OPENAI));
-    }
+    validateResponseStructure(responseData, Provider.OPENAI);
 
-    const gptModels: ModelInfo[] = [];
-
-    for (const item of responseData.data) {
-      if (isRecord(item) && hasProperty(item, "id") && isString(item.id)) {
-        const modelId = item.id;
-        if (
-          modelId.includes("gpt") &&
-          !modelId.includes("instruct") &&
-          !modelId.includes("0301") &&
-          !modelId.includes("0314") &&
-          !modelId.includes("vision")
-        ) {
-          gptModels.push({
-            id: modelId,
-            name: modelId,
-          });
-        }
-      }
-    }
-
-    gptModels.sort((a, b) => a.id.localeCompare(b.id));
+    const data = responseData as { data: unknown[] };
+    const allModels = parseModelsFromResponse(data.data);
+    const gptModels = filterModels(allModels, {
+      includePatterns: ["gpt"],
+      excludePatterns: ["instruct", "0301", "0314", "vision"]
+    });
 
     if (gptModels.length === 0) {
       throw new NoSuitableModelsError(getProviderDisplayName(Provider.OPENAI));
     }
 
-    return gptModels;
+    return sortById(gptModels);
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new NetworkError(t("errors.api.generationFailed"));
+    return handleApiError(error);
   }
 }
 
@@ -172,50 +232,25 @@ async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
       },
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new InvalidAPIKeyError(getProviderDisplayName(Provider.ANTHROPIC));
-      }
-      throw new NetworkError(
-        t("errors.api.requestFailed", { message: `${response.status} ${response.statusText}` })
-      );
-    }
+    validateApiResponse(response, Provider.ANTHROPIC);
 
     const responseData: unknown = await response.json();
-    if (
-      !isRecord(responseData) ||
-      !hasProperty(responseData, "data") ||
-      !isArray(responseData.data)
-    ) {
-      throw new InvalidResponseFormatError(getProviderDisplayName(Provider.ANTHROPIC));
-    }
+    validateResponseStructure(responseData, Provider.ANTHROPIC);
 
-    const claudeModels: ModelInfo[] = [];
-
-    for (const item of responseData.data) {
-      if (isRecord(item) && hasProperty(item, "id") && isString(item.id)) {
-        const modelId = item.id;
-        if (modelId.includes("claude") && !modelId.includes("instant")) {
-          claudeModels.push({
-            id: modelId,
-            name: hasProperty(item, "display_name") && isString(item.display_name) ? item.display_name : modelId,
-          });
-        }
-      }
-    }
-
-    claudeModels.sort((a, b) => a.id.localeCompare(b.id));
+    const data = responseData as { data: unknown[] };
+    const allModels = parseModelsFromResponse(data.data, "id", "display_name");
+    const claudeModels = filterModels(allModels, {
+      includePatterns: ["claude"],
+      excludePatterns: ["instant"]
+    });
 
     if (claudeModels.length === 0) {
       throw new NoSuitableModelsError(getProviderDisplayName(Provider.ANTHROPIC));
     }
 
-    return claudeModels;
+    return sortById(claudeModels);
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new NetworkError(t("errors.api.generationFailed"));
+    return handleApiError(error);
   }
 }
 
@@ -229,46 +264,21 @@ async function fetchOllamaModels(apiKey: string): Promise<ModelInfo[]> {
       },
     });
 
-    if (!response.ok) {
-      throw new NetworkError(
-        t("errors.api.requestFailed", { message: `${response.status} ${response.statusText}` })
-      );
-    }
+    validateApiResponse(response, Provider.OLLAMA, []);
 
     const responseData: unknown = await response.json();
-    if (
-      !isRecord(responseData) ||
-      !hasProperty(responseData, "models") ||
-      !isArray(responseData.models)
-    ) {
-      throw new InvalidResponseFormatError(getProviderDisplayName(Provider.OLLAMA));
-    }
+    validateResponseStructure(responseData, Provider.OLLAMA, "models");
 
-    const ollamaModels: ModelInfo[] = [];
-
-    for (const item of responseData.models) {
-      if (isRecord(item) && hasProperty(item, "name") && isString(item.name)) {
-        const modelName = item.name;
-
-        ollamaModels.push({
-          id: modelName,
-          name: modelName,
-        });
-      }
-    }
-
-    ollamaModels.sort((a, b) => a.id.localeCompare(b.id));
+    const data = responseData as { models: unknown[] };
+    const ollamaModels = parseModelsFromResponse(data.models, "name");
 
     if (ollamaModels.length === 0) {
       throw new NoSuitableModelsError(getProviderDisplayName(Provider.OLLAMA));
     }
 
-    return ollamaModels;
+    return sortById(ollamaModels);
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new NetworkError(t("errors.api.generationFailed"));
+    return handleApiError(error);
   }
 }
 
@@ -281,75 +291,24 @@ async function fetchGeminiModels(apiKey: string): Promise<ModelInfo[]> {
       },
     });
 
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new InvalidAPIKeyError(getProviderDisplayName(Provider.GEMINI));
-      }
-      throw new NetworkError(
-        t("errors.api.requestFailed", { message: `${response.status} ${response.statusText}` })
-      );
-    }
+    validateApiResponse(response, Provider.GEMINI, [401, 403]);
 
     const responseData: unknown = await response.json();
-    if (
-      !isRecord(responseData) ||
-      !hasProperty(responseData, "models") ||
-      !isArray(responseData.models)
-    ) {
-      throw new InvalidResponseFormatError(getProviderDisplayName(Provider.GEMINI));
-    }
+    validateResponseStructure(responseData, Provider.GEMINI, "models");
 
-    const geminiModels: ModelInfo[] = [];
-    const preferredModels = [
-      "gemini-1.5-pro",
-      "gemini-1.5-flash", 
-      "gemini-1.5-flash-8b",
-      "gemini-2.0-flash-exp",
-      "gemini-pro",
-    ];
+    const data = responseData as { models: unknown[] };
+    const allModels = parseGeminiModels(data.models);
 
-    for (const item of responseData.models) {
-      if (
-        isRecord(item) && 
-        hasProperty(item, "name") && 
-        isString(item.name) &&
-        hasProperty(item, "supportedGenerationMethods") &&
-        isArray(item.supportedGenerationMethods)
-      ) {
-        const modelName = item.name.replace("models/", "");
-        
-        if (
-          item.supportedGenerationMethods.includes("generateContent") &&
-          preferredModels.includes(modelName)
-        ) {
-          const displayName = hasProperty(item, "displayName") && isString(item.displayName) ? item.displayName : modelName;
-          
-          geminiModels.push({
-            id: modelName,
-            name: displayName,
-          });
-        }
-      }
-    }
-
-    geminiModels.sort((a, b) => {
-      const aIndex = preferredModels.indexOf(a.id);
-      const bIndex = preferredModels.indexOf(b.id);
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      }
-      return a.id.localeCompare(b.id);
+    const geminiModels = filterModels(allModels, {
+      excludePatterns: ["-instant-"]
     });
 
     if (geminiModels.length === 0) {
       throw new NoSuitableModelsError(getProviderDisplayName(Provider.GEMINI));
     }
 
-    return geminiModels;
+    return sortById(geminiModels);
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new NetworkError(t("errors.api.generationFailed"));
+    return handleApiError(error);
   }
 }

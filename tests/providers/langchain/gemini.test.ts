@@ -17,7 +17,7 @@ describe("LangChainGeminiProvider", () => {
       const mockChatGemini = { invoke: vi.fn() };
       vi.mocked(ChatGoogleGenerativeAI).mockImplementation(() => mockChatGemini as unknown as ChatGoogleGenerativeAI);
 
-      new LangChainGeminiProvider(
+      const provider = new LangChainGeminiProvider(
         "test-api-key",
         "gemini-1.5-pro",
         72,
@@ -26,6 +26,7 @@ describe("LangChainGeminiProvider", () => {
         "en"
       );
 
+      expect(provider).toBeDefined();
       expect(ChatGoogleGenerativeAI).toHaveBeenCalledWith({
         model: "gemini-1.5-pro",
         apiKey: "test-api-key",
@@ -97,7 +98,7 @@ describe("LangChainGeminiProvider", () => {
       vi.mocked(ChatGoogleGenerativeAI).mockImplementation(() => mockChatGemini as unknown as ChatGoogleGenerativeAI);
 
       const customRules = ["Use conventional commits", "Be concise"];
-      new LangChainGeminiProvider(
+      const provider = new LangChainGeminiProvider(
         "custom-api-key",
         "gemini-1.5-flash",
         100,
@@ -106,6 +107,7 @@ describe("LangChainGeminiProvider", () => {
         "es"
       );
 
+      expect(provider).toBeDefined();
       expect(ChatGoogleGenerativeAI).toHaveBeenCalledWith({
         model: "gemini-1.5-flash",
         apiKey: "custom-api-key",

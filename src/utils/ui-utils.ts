@@ -7,6 +7,7 @@ import {
   getLanguageDisplayName,
   getLanguageChoices,
   getUILanguageChoices,
+  getProviderChoices,
 } from "./formatting.js";
 import { exit } from "./system-utils.js";
 import ora, { type Ora } from "ora";
@@ -14,7 +15,7 @@ import { isString, isArray } from "./guards.js";
 import { Provider, UsageMode, Config, Language } from "../types/index.js";
 import { getAvailableModels, validateAndFetchModels } from "../providers/models.js";
 import { t } from "./i18n.js";
-import { getProviderChoices, DEFAULTS, VALIDATION_LIMITS, UI } from "../constants.js";
+import { DEFAULTS, VALIDATION_LIMITS, UI } from "../constants.js";
 import { getPromptMessage, getPromptHint, getUsageModeDisplayText } from "./i18n.js";
 import { createError, NoSuitableModelsError } from "./errors.js";
 import { isUrlBasedProvider, getProviderDefaultUrl } from "../providers/configuration.js";

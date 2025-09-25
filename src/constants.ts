@@ -1,5 +1,4 @@
-import { Provider, Language } from "./types/index.js";
-import { getProviderDisplayName } from "./utils/formatting.js";
+import { Language } from "./types/index.js";
 
 export const API_TIMEOUT_MS = 60000;
 
@@ -64,12 +63,6 @@ export const GIT = {
   ],
 } as const;
 
-export const getProviderChoices = () => [
-  { title: getProviderDisplayName(Provider.OPENAI), value: Provider.OPENAI },
-  { title: getProviderDisplayName(Provider.ANTHROPIC), value: Provider.ANTHROPIC },
-  { title: getProviderDisplayName(Provider.OLLAMA), value: Provider.OLLAMA },
-  { title: getProviderDisplayName(Provider.GEMINI), value: Provider.GEMINI },
-];
 
 export const VALIDATION = {
   API_KEY_REQUIRED: (value: string) => value.length > 0 || "API key is required",
@@ -109,4 +102,11 @@ export const SETTINGS_ACTIONS = {
   CUSTOM_RULES: "customRules",
   UI_LANGUAGE: "uiLanguage",
   COMMIT_LANGUAGE: "commitLanguage",
+} as const;
+
+export const MODEL_DEFAULTS = {
+  TEMPERATURE: 0.7,
+  MAX_TOKENS: 2000,
+  TOP_P: 0.8,
+  TOP_K: 10,
 } as const;

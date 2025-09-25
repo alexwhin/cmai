@@ -76,7 +76,7 @@ export class ConfigurationError extends BaseError {
 
 export class ConfigurationNotFoundError extends ConfigurationError {
   constructor(path?: string) {
-    const message = path? t("errors.configuration.notFound", { path }): t("errors.configuration.notFoundNoPath");
+    const message = path ? t("errors.configuration.notFound", { path }) : t("errors.configuration.notFoundNoPath");
     super(message, "CONFIG_NOT_FOUND");
   }
 }
@@ -163,7 +163,7 @@ export class NetworkError extends APIError {
 
 export class ConnectionRefusedError extends NetworkError {
   constructor(provider?: string) {
-    const message = provider? t("errors.network.connectionRefusedWithProvider", { provider }): t("errors.network.connectionRefusedNoProvider");
+    const message = provider ? t("errors.network.connectionRefusedWithProvider", { provider }) : t("errors.network.connectionRefusedNoProvider");
     super(message);
   }
 }
@@ -177,7 +177,7 @@ export class TimeoutError extends NetworkError {
 
 export class ServerNotFoundError extends NetworkError {
   constructor(provider?: string) {
-    const message = provider? t("errors.network.serverNotFoundWithProvider", { provider }): t("errors.network.serverNotFoundNoProvider");
+    const message = provider ? t("errors.network.serverNotFoundWithProvider", { provider }) : t("errors.network.serverNotFoundNoProvider");
     super(message);
   }
 }
@@ -364,12 +364,11 @@ export function formatError(err: unknown, _provider: string, showDebug: boolean 
       lines.push(dim(`  ${t("debug.error", { message: err.message })}`));
       if (err.stack) {
         lines.push(dim(`  ${t("debug.stackTrace")}`));
-        err.stack
-          .split("\n")
-          .slice(1, 4)
-          .forEach((line: string) => {
-            lines.push(dim(`    ${line.trim()}`));
-          });
+        const stackLines = err.stack.split("\n");
+        const stackToShow = stackLines.slice(1, Math.min(4, stackLines.length));
+        stackToShow.forEach((line: string) => {
+          lines.push(dim(`    ${line.trim()}`));
+        });
       }
     } else {
       lines.push(dim(`  ${t("debug.rawError", { error: JSON.stringify(err, null, 2) })}`));
@@ -384,7 +383,7 @@ function getErrorMessage(error: BaseError | Error): string {
     return error.message;
   }
 
-  return error instanceof Error? error.message: t("errors.unknown", { message: "An unexpected error occurred" });
+  return error instanceof Error ? error.message : t("errors.unknown", { message: "An unexpected error occurred" });
 }
 
 export function handleError(errorInstance: unknown, showDebug: boolean = false): void {
@@ -399,7 +398,7 @@ export function handleError(errorInstance: unknown, showDebug: boolean = false):
     errorWithDebug(formatError(errorInstance, provider, showDebug));
   } else {
     const errorMessage =
-      errorInstance instanceof Error? errorInstance.message: t("errors.unknown", { message: "Unknown error" });
+      errorInstance instanceof Error ? errorInstance.message : t("errors.unknown", { message: "Unknown error" });
     message(errorMessage, { type: "error", variant: "title" });
 
     if (showDebug && errorInstance instanceof Error && errorInstance.stack) {

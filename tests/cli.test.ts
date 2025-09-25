@@ -38,7 +38,16 @@ vi.mock("../src/utils/errors.js", () => ({
 
 
 // Mock commander with proper command registration and method chaining
-const mockCommands: Array<{ name: () => string; action: (fn: () => void) => void }> = [];
+interface MockCommand {
+  name: () => string;
+  description: (desc: string) => MockCommand;
+  option: (flag: string, desc: string) => MockCommand;
+  action: (fn: (...args: unknown[]) => unknown) => MockCommand;
+  actionFn?: (...args: unknown[]) => unknown;
+  commands?: MockCommand[];
+}
+
+const mockCommands: MockCommand[] = [];
 const mockProgram = {
   opts: vi.fn(() => ({ debug: false })),
   name: vi.fn().mockReturnThis(),
@@ -46,21 +55,15 @@ const mockProgram = {
   version: vi.fn().mockReturnThis(),
   option: vi.fn().mockReturnThis(),
   command: vi.fn((name: string) => {
-    const newCommand = {
+    const newCommand: MockCommand = {
       name: vi.fn().mockReturnValue(name),
       description: vi.fn().mockReturnThis(),
       option: vi.fn().mockReturnThis(),
-      action: vi.fn().mockReturnThis(),
-      commands: [] as Array<{ name: () => string; action: (fn: () => void) => void }>,
-      command: vi.fn((subName: string) => {
-        const subCommand = {
-          name: vi.fn().mockReturnValue(subName),
-          description: vi.fn().mockReturnThis(),
-          action: vi.fn().mockReturnThis(),
-        };
-        newCommand.commands.push(subCommand);
-        return subCommand;
+      action: vi.fn((fn: (...args: unknown[]) => unknown) => {
+        newCommand.actionFn = fn;
+        return newCommand;
       }),
+      commands: [],
     };
     mockCommands.push(newCommand);
     return newCommand;
@@ -448,6 +451,82 @@ describe("cli", () => {
 
       // Verify the CLI module is structured correctly
       await import("../src/cli.js");
+    });
+  });
+
+  describe("CLI command action error handlers", () => {
+    beforeEach(async () => {
+      mockCommands.length = 0;
+      await import("../src/cli.js");
+    });
+
+    it("covers init command action error handling (lines 28-33)", async () => {
+      const { initCommand } = await import("../src/commands/init.js");
+      const { handleError } = await import("../src/utils/errors.js");
+
+      const testError = new Error("Init command failed");
+      vi.mocked(initCommand).mockRejectedValue(testError);
+
+      const initCmd = mockCommands.find(cmd => cmd.name() === "init");
+      expect(initCmd).toBeDefined();
+      expect(initCmd?.actionFn).toBeDefined();
+
+      await initCmd?.actionFn?.();
+
+      expect(handleError).toHaveBeenCalledWith(testError, false);
+    });
+
+    it("covers generate command action error handling (lines 40-51)", async () => {
+      const { generateCommand } = await import("../src/commands/generate.js");
+      const { handleError } = await import("../src/utils/errors.js");
+
+      const testError = new Error("Generate command failed");
+      vi.mocked(generateCommand).mockRejectedValue(testError);
+
+      const generateCmd = mockCommands.find(cmd => cmd.name() === "generate");
+      expect(generateCmd).toBeDefined();
+      expect(generateCmd?.actionFn).toBeDefined();
+
+      const mockOptions = { dryrun: false };
+      const mockCommand = { parent: { opts: () => ({ debug: false }) } };
+
+      await generateCmd?.actionFn?.(mockOptions, mockCommand);
+
+      expect(handleError).toHaveBeenCalledWith(testError, false);
+    });
+
+    it("covers settings command action error handling (lines 57-62)", async () => {
+      const { settingsCommand } = await import("../src/commands/settings.js");
+      const { handleError } = await import("../src/utils/errors.js");
+
+      const testError = new Error("Settings command failed");
+      vi.mocked(settingsCommand).mockRejectedValue(testError);
+
+      const settingsCmd = mockCommands.find(cmd => cmd.name() === "settings");
+      expect(settingsCmd).toBeDefined();
+      expect(settingsCmd?.actionFn).toBeDefined();
+
+      await settingsCmd?.actionFn?.();
+
+      expect(handleError).toHaveBeenCalledWith(testError, false);
+    });
+
+    it("covers debug flag handling in generate command", async () => {
+      const { generateCommand } = await import("../src/commands/generate.js");
+      const { handleError } = await import("../src/utils/errors.js");
+
+      const testError = new Error("Generate with debug failed");
+      vi.mocked(generateCommand).mockRejectedValue(testError);
+
+      const generateCmd = mockCommands.find(cmd => cmd.name() === "generate");
+      expect(generateCmd).toBeDefined();
+
+      const mockOptions = { dryrun: true };
+      const mockCommand = { parent: { opts: () => ({ debug: true }) } };
+
+      await generateCmd?.actionFn?.(mockOptions, mockCommand);
+
+      expect(handleError).toHaveBeenCalledWith(testError, true);
     });
   });
 });

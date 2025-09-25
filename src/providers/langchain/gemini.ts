@@ -4,6 +4,7 @@ import { LangChainBaseProvider } from "./base.js";
 import { ModelNotFoundError } from "../../utils/errors.js";
 import { Provider } from "../../types/index.js";
 import { getProviderDisplayName } from "../../utils/formatting.js";
+import { MODEL_DEFAULTS } from "../../constants.js";
 
 export class LangChainGeminiProvider extends LangChainBaseProvider {
   createModel(): BaseLanguageModel {
@@ -24,9 +25,9 @@ export class LangChainGeminiProvider extends LangChainBaseProvider {
       model: this.modelName,
       apiKey: this.apiKey,
       maxOutputTokens: 2048,
-      temperature: 0.7,
-      topP: 0.8,
-      topK: 10,
+      temperature: MODEL_DEFAULTS.TEMPERATURE,
+      topP: MODEL_DEFAULTS.TOP_P,
+      topK: MODEL_DEFAULTS.TOP_K,
     }) as unknown as BaseLanguageModel;
   }
 }

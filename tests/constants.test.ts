@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  getProviderChoices,
   VALIDATION,
   CHOICE_VALUES,
   SETTINGS_ACTIONS,
@@ -10,6 +9,7 @@ import {
   FILE_SYSTEM,
   GIT,
 } from "../src/constants.js";
+import { getProviderChoices } from "../src/utils/formatting.js";
 import { Provider } from "../src/types/index.js";
 
 describe("constants", () => {

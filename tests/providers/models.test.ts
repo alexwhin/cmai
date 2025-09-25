@@ -382,4 +382,158 @@ describe("providers/models", () => {
       expect(result.error?.message).toContain("Network error");
     });
   });
+
+  describe("Gemini", () => {
+    const testApiKey = "test-key";
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models?key=${testApiKey}`;
+
+    it("fetches and formats Gemini models successfully", async () => {
+      const mockResponse = createMockFetchResponse({
+        models: [
+          { 
+            name: "models/gemini-1.5-pro", 
+            displayName: "Gemini 1.5 Pro",
+            supportedGenerationMethods: ["generateContent"]
+          },
+          { 
+            name: "models/gemini-1.5-flash", 
+            displayName: "Gemini 1.5 Flash",
+            supportedGenerationMethods: ["generateContent"]
+          },
+          { 
+            name: "models/gemini-pro", 
+            displayName: "Gemini Pro",
+            supportedGenerationMethods: ["generateContent"]
+          },
+          { 
+            name: "models/gemini-1.5-flash-8b", 
+            displayName: "Gemini 1.5 Flash 8B",
+            supportedGenerationMethods: ["generateContent"]
+          },
+        ],
+      });
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+
+      const models = await getAvailableModels(Provider.GEMINI, testApiKey);
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(geminiEndpoint, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      expect(models).toHaveLength(4);
+      expect(models[0]).toEqual({ id: "gemini-1.5-flash", name: "Gemini 1.5 Flash" });
+      expect(models[1]).toEqual({ id: "gemini-1.5-flash-8b", name: "Gemini 1.5 Flash 8B" });
+      expect(models[2]).toEqual({ id: "gemini-1.5-pro", name: "Gemini 1.5 Pro" });
+      expect(models[3]).toEqual({ id: "gemini-pro", name: "Gemini Pro" });
+    });
+
+    it("handles 401 unauthorized error for Gemini", async () => {
+      const mockResponse = createMockFetchResponse(
+        {},
+        {
+          ok: false,
+          status: 401,
+          statusText: "Unauthorized",
+        }
+      );
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+
+      await expect(getAvailableModels(Provider.GEMINI, "invalid-key")).rejects.toThrow(
+        "Authentication failed"
+      );
+    });
+
+    it("handles 403 forbidden error for Gemini", async () => {
+      const mockResponse = createMockFetchResponse(
+        {},
+        {
+          ok: false,
+          status: 403,
+          statusText: "Forbidden",
+        }
+      );
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+
+      await expect(getAvailableModels(Provider.GEMINI, "invalid-key")).rejects.toThrow(
+        "Authentication failed"
+      );
+    });
+
+    it("throws NoSuitableModelsError when no Gemini models are available", async () => {
+      const mockResponse = createMockFetchResponse({
+        models: [],
+      });
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+
+      await expect(getAvailableModels(Provider.GEMINI, testApiKey)).rejects.toThrow(
+        "No suitable models"
+      );
+    });
+
+    it("includes all models sorted by ID", async () => {
+      const mockResponse = createMockFetchResponse({
+        models: [
+          { 
+            name: "models/gemini-pro", 
+            displayName: "Gemini Pro",
+            supportedGenerationMethods: ["generateContent"]
+          },
+          { 
+            name: "models/gemini-1.5-flash", 
+            displayName: "Gemini 1.5 Flash",
+            supportedGenerationMethods: ["generateContent"]
+          },
+          { 
+            name: "models/gemini-1.5-pro", 
+            displayName: "Gemini 1.5 Pro",
+            supportedGenerationMethods: ["generateContent"]
+          },
+          { 
+            name: "models/gemini-other", 
+            displayName: "Other Model",
+            supportedGenerationMethods: ["generateContent"]
+          },
+        ],
+      });
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+
+      const models = await getAvailableModels(Provider.GEMINI, testApiKey);
+
+      // Should include all models sorted alphabetically by ID
+      expect(models).toHaveLength(4);
+      expect(models[0].id).toBe("gemini-1.5-flash");
+      expect(models[1].id).toBe("gemini-1.5-pro");
+      expect(models[2].id).toBe("gemini-other");
+      expect(models[3].id).toBe("gemini-pro");
+    });
+  });
+
+  describe("Anthropic no suitable models", () => {
+    it("throws NoSuitableModelsError when no Anthropic models are available", async () => {
+      const mockResponse = createMockFetchResponse({
+        data: [],
+      });
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+
+      await expect(getAvailableModels(Provider.ANTHROPIC, "test-key")).rejects.toThrow(
+        "No suitable models"
+      );
+    });
+  });
+
+  describe("Ollama no suitable models", () => {
+    it("throws NoSuitableModelsError when no Ollama models are available", async () => {
+      const mockResponse = createMockFetchResponse({
+        models: [],
+      });
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+
+      await expect(getAvailableModels(Provider.OLLAMA, "http://localhost:11434")).rejects.toThrow(
+        "No suitable models"
+      );
+    });
+  });
 });

@@ -2,6 +2,7 @@ import { Provider, UsageMode, GitContext } from "../types/index.js";
 import { color } from "./style.js";
 import { getFormattedGitAuthor, getRemoteUrl } from "./git-utils.js";
 import { getProviderDisplayName } from "./formatting.js";
+import { sortByMultipleKeys } from "./api-helpers.js";
 
 export type FilePathItem = { label: string; value: string };
 
@@ -17,7 +18,7 @@ export function formatFilePathsAsItems(files: string[]): FilePathItem[] {
     };
   });
 
-  return items.sort((a, b) => {
+  return sortByMultipleKeys(items, (a, b) => {
     if (a.label !== b.label) {
       return a.label.localeCompare(b.label);
     }

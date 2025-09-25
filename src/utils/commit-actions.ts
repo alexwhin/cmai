@@ -1,3 +1,4 @@
+import { promisify } from "node:util";
 import { Config, UsageMode, GitContext, AIProvider } from "../types/index.js";
 import { copyToClipboard } from "./system-utils.js";
 import { commit, getLatestCommitHash, getCommitStats } from "./git-utils.js";
@@ -112,7 +113,12 @@ async function executeTerminalAction(context: CommitActionContext): Promise<void
   message("", { items });
   message(t("messages.terminalCommitReady"), { type: "success", variant: "title" });
 
-  const commitCommand = `git commit -m "${selectedMessage.replace(/"/g, '\\"')}"`;
+  const shellEscapedMessage = selectedMessage.replace(/'/g, "'\\''")
+    .replace(/\$/g, "\\$")
+    .replace(/`/g, "\\`")
+    .replace(/\\/g, "\\\\");
+  
+  const commitCommand = `git commit -m '${shellEscapedMessage}'`;
 
   const readline = await import("node:readline");
   const rl = readline.createInterface({
@@ -132,9 +138,24 @@ async function executeTerminalAction(context: CommitActionContext): Promise<void
 
   if (answer.trim()) {
     try {
-      const { execSync } = await import("node:child_process");
-      execSync(answer, { stdio: "inherit" });
-      message(t("messages.commitExecuted"), { type: "success", variant: "title" });
+      const gitCommitRegex = /^git\s+commit\s+(?:-m\s+)?['"](.+)['"]$/;
+      const match = answer.trim().match(gitCommitRegex);
+      
+      if (match && match.length > 1 && match[1]) {
+        const { execFile } = await import("node:child_process");
+        const execFilePromise = promisify(execFile);
+        
+        await execFilePromise("git", ["commit", "-m", match[1]], {
+          shell: false
+        });
+        
+        message(t("messages.commitExecuted"), { type: "success", variant: "title" });
+      } else {
+        message(t("errors.system.invalidCommand"), { type: "warning", variant: "title" });
+        
+        const { execSync } = await import("node:child_process");
+        execSync(answer, { stdio: "inherit" });
+      }
     } catch (error) {
       message(
         error instanceof Error ? error.message : t("errors.unknown", { message: String(error) }),

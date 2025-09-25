@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mockPlatform } from "../test-helpers.js";
 
-const mockExecuteCommand = vi.fn();
+const mockExecFilePromise = vi.fn();
 
-vi.mock("node:child_process");
+vi.mock("node:child_process", () => ({
+  execFile: vi.fn(),
+}));
 vi.mock("node:util", () => ({
-  promisify: vi.fn(() => mockExecuteCommand),
+  promisify: vi.fn(() => mockExecFilePromise),
 }));
 
 describe("system-utils", () => {
@@ -13,7 +15,7 @@ describe("system-utils", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockExecuteCommand.mockReset();
+    mockExecFilePromise.mockReset();
   });
 
   afterEach(() => {
@@ -46,41 +48,55 @@ describe("system-utils", () => {
 
     it("copies text successfully on macOS", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecuteCommand).toHaveBeenCalledWith('printf %s "test text" | pbcopy');
+      expect(mockExecFilePromise).toHaveBeenCalledWith(
+        "/bin/sh",
+        ["-c", 'printf \'%s\' "test text" | pbcopy'],
+        { shell: false, windowsHide: true }
+      );
     });
 
     it("copies text successfully on Windows", async () => {
       restorePlatform = mockPlatform("win32");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecuteCommand).toHaveBeenCalledWith(
-        "powershell -command \"Set-Clipboard -Value 'test text'\""
+      const base64Text = Buffer.from("test text").toString("base64");
+      expect(mockExecFilePromise).toHaveBeenCalledWith(
+        "powershell",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          `[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${base64Text}')) | Set-Clipboard`
+        ],
+        { shell: false, windowsHide: true }
       );
     });
 
     it("copies text successfully on Linux with xclip", async () => {
       restorePlatform = mockPlatform("linux");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecuteCommand).toHaveBeenCalledWith(
-        'printf %s "test text" | xclip -selection clipboard'
+      expect(mockExecFilePromise).toHaveBeenCalledWith(
+        "/bin/sh",
+        ["-c", 'printf \'%s\' "test text" | xclip -selection clipboard'],
+        { shell: false, windowsHide: true }
       );
     });
 
     it("handles command execution failure", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecuteCommand.mockRejectedValue(new Error("Command failed"));
+      mockExecFilePromise.mockRejectedValue(new Error("Command failed"));
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
@@ -89,7 +105,7 @@ describe("system-utils", () => {
 
     it("handles special characters correctly", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
       const specialText = 'Text with "quotes" and $variables';
@@ -99,7 +115,7 @@ describe("system-utils", () => {
 
     it("handles multiline text", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
       const multilineText = "Line 1\nLine 2\nLine 3";
@@ -109,7 +125,7 @@ describe("system-utils", () => {
 
     it("uses fallback methods on Linux when primary method fails", async () => {
       restorePlatform = mockPlatform("linux");
-      mockExecuteCommand
+      mockExecFilePromise
         .mockRejectedValueOnce(new Error("xclip not found"))
         .mockResolvedValueOnce({ stdout: "", stderr: "" });
 
@@ -120,7 +136,7 @@ describe("system-utils", () => {
 
     it("throws error when all methods fail", async () => {
       restorePlatform = mockPlatform("linux");
-      mockExecuteCommand.mockRejectedValue(new Error("All commands failed"));
+      mockExecFilePromise.mockRejectedValue(new Error("All commands failed"));
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
@@ -137,7 +153,7 @@ describe("system-utils", () => {
 
     it("handles very long text", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
       const longText = "x".repeat(10000);
@@ -489,44 +505,56 @@ describe("system-utils", () => {
 
     it("handles Windows apostrophe escaping", async () => {
       restorePlatform = mockPlatform("win32");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
       const textWithApostrophes = "It's a test's text";
 
       await expect(copyToClipboard(textWithApostrophes)).resolves.toBeUndefined();
-      expect(mockExecuteCommand).toHaveBeenCalledWith(
-        "powershell -command \"Set-Clipboard -Value 'It''s a test''s text'\""
+      const base64Text = Buffer.from(textWithApostrophes).toString("base64");
+      expect(mockExecFilePromise).toHaveBeenCalledWith(
+        "powershell",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          `[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${base64Text}')) | Set-Clipboard`
+        ],
+        { shell: false, windowsHide: true }
       );
     });
 
     it("handles FreeBSD platform for clipboard", async () => {
       restorePlatform = mockPlatform("freebsd");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecuteCommand).toHaveBeenCalledWith(
-        'printf %s "test text" | xclip -selection clipboard'
+      expect(mockExecFilePromise).toHaveBeenCalledWith(
+        "/bin/sh",
+        ["-c", 'printf \'%s\' "test text" | xclip -selection clipboard'],
+        { shell: false, windowsHide: true }
       );
     });
 
     it("handles OpenBSD platform for clipboard", async () => {
       restorePlatform = mockPlatform("openbsd");
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecuteCommand).toHaveBeenCalledWith(
-        'printf %s "test text" | xclip -selection clipboard'
+      expect(mockExecFilePromise).toHaveBeenCalledWith(
+        "/bin/sh",
+        ["-c", 'printf \'%s\' "test text" | xclip -selection clipboard'],
+        { shell: false, windowsHide: true }
       );
     });
 
     it("handles aggregate errors in clipboard operations", async () => {
       restorePlatform = mockPlatform("linux");
-      mockExecuteCommand.mockRejectedValue(new Error("Command failed"));
+      mockExecFilePromise.mockRejectedValue(new Error("Command failed"));
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
@@ -612,64 +640,64 @@ describe("system-utils", () => {
       expect(mockReadFileSync).toHaveBeenCalledWith(expect.stringContaining("package.json"), "utf-8");
     });
 
-    it("throws InvalidConfigurationError for invalid JSON", async () => {
+    it("returns fallback version for invalid JSON", async () => {
       mockReadFileSync.mockReturnValue("{ invalid json");
       
       const { getPackageVersion } = await import("../../src/utils/system-utils.js");
-      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      const version = getPackageVersion();
       
-      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+      expect(version).toBe("0.2.1");
     });
 
-    it("throws InvalidConfigurationError for missing version field", async () => {
+    it("returns fallback version for missing version field", async () => {
       const packageJsonWithoutVersion = JSON.stringify({ name: "test-package" });
       mockReadFileSync.mockReturnValue(packageJsonWithoutVersion);
       
       const { getPackageVersion } = await import("../../src/utils/system-utils.js");
-      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      const version = getPackageVersion();
       
-      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+      expect(version).toBe("0.2.1");
     });
 
-    it("throws InvalidConfigurationError for non-string version", async () => {
+    it("returns fallback version for non-string version", async () => {
       const packageJsonWithInvalidVersion = JSON.stringify({ version: 123 });
       mockReadFileSync.mockReturnValue(packageJsonWithInvalidVersion);
       
       const { getPackageVersion } = await import("../../src/utils/system-utils.js");
-      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      const version = getPackageVersion();
       
-      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+      expect(version).toBe("0.2.1");
     });
 
-    it("throws InvalidConfigurationError when readFileSync fails", async () => {
+    it("returns fallback version when readFileSync fails", async () => {
       mockReadFileSync.mockImplementation(() => {
         throw new Error("File not found");
       });
       
       const { getPackageVersion } = await import("../../src/utils/system-utils.js");
-      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      const version = getPackageVersion();
       
-      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+      expect(version).toBe("0.2.1");
     });
 
-    it("throws InvalidConfigurationError for non-object package.json", async () => {
+    it("returns fallback version for non-object package.json", async () => {
       const nonObjectPackageJson = JSON.stringify("not an object");
       mockReadFileSync.mockReturnValue(nonObjectPackageJson);
       
       const { getPackageVersion } = await import("../../src/utils/system-utils.js");
-      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      const version = getPackageVersion();
       
-      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+      expect(version).toBe("0.2.1");
     });
 
-    it("throws InvalidConfigurationError for array package.json", async () => {
+    it("returns fallback version for array package.json", async () => {
       const arrayPackageJson = JSON.stringify(["not", "an", "object"]);
       mockReadFileSync.mockReturnValue(arrayPackageJson);
       
       const { getPackageVersion } = await import("../../src/utils/system-utils.js");
-      const { InvalidConfigurationError } = await import("../../src/utils/errors.js");
+      const version = getPackageVersion();
       
-      expect(() => getPackageVersion()).toThrow(InvalidConfigurationError);
+      expect(version).toBe("0.2.1");
     });
   });
 });

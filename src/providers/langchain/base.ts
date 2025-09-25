@@ -15,6 +15,7 @@ import {
   FailedToParseCommitMessagesError,
   TimeoutError,
   createError,
+  ModelRequiredError,
 } from "../../utils/errors.js";
 import { DEFAULTS, API_TIMEOUT_MS, GIT } from "../../constants.js";
 import { message } from "../../utils/ui-utils.js";
@@ -26,7 +27,9 @@ import {
   isArray,
   isNonEmptyString,
   isJSONString,
+  isNumber,
 } from "../../utils/guards.js";
+import { trimTrailingChars } from "../../utils/api-helpers.js";
 
 export abstract class LangChainBaseProvider implements AIProvider {
   protected model: BaseLanguageModel;
@@ -44,6 +47,12 @@ export abstract class LangChainBaseProvider implements AIProvider {
   }
 
   abstract createModel(): BaseLanguageModel;
+
+  protected validateModelName(): void {
+    if (!this.modelName) {
+      throw new ModelRequiredError();
+    }
+  }
 
   async generateCandidates(context: GitContext): Promise<CommitCandidate[]> {
     try {
@@ -76,7 +85,7 @@ export abstract class LangChainBaseProvider implements AIProvider {
         if (isString(response.content)) {
           content = response.content;
         } else if (isArray(response.content)) {
-          content = (response.content as unknown[])
+          content = response.content
             .map((item) => {
               if (isString(item)) {
                 return item;
@@ -150,13 +159,8 @@ export abstract class LangChainBaseProvider implements AIProvider {
         .filter((commit: unknown): commit is string => isNonEmptyString(commit))
         .slice(0, this.commitChoicesCount)
         .map((commit: string) => {
-          let cleanedCommit = commit.trim();
-
-          if (cleanedCommit.endsWith(".")) {
-            cleanedCommit = cleanedCommit.slice(0, -1);
-          }
-
-          return cleanedCommit;
+          const cleanedCommit = commit.trim();
+          return trimTrailingChars(cleanedCommit, ["."]);
         })
         .filter((commit: string) => commit.length <= this.maxCommitLength);
 
@@ -169,7 +173,7 @@ export abstract class LangChainBaseProvider implements AIProvider {
       message(
         t("ai.jsonParsingFailed", {
           error:
-            error instanceof Error? error.message: t("errors.unknown", { message: String(error) }),
+            error instanceof Error ? error.message : t("errors.unknown", { message: String(error) }),
         }),
         { type: "warning", variant: "title" }
       );
@@ -223,14 +227,7 @@ export abstract class LangChainBaseProvider implements AIProvider {
             cleanedLine = line.slice(1, -1);
           }
 
-          if (cleanedLine.endsWith(".")) {
-            cleanedLine = cleanedLine.slice(0, -1);
-          }
-
-          if (cleanedLine.endsWith(",")) {
-            cleanedLine = cleanedLine.slice(0, -1);
-          }
-
+          cleanedLine = trimTrailingChars(cleanedLine, [".", ","]);
           return cleanedLine.trim();
         })
         .filter((commit: string) => commit.length <= this.maxCommitLength);
@@ -241,34 +238,35 @@ export abstract class LangChainBaseProvider implements AIProvider {
     this.lastTokenUsage = null;
 
     if (isRecord(response) && hasProperty(response, "response_metadata")) {
-      const metadata = (
-        response as {
-          response_metadata?: {
-            tokenUsage?: {
-              promptTokens: number;
-              completionTokens: number;
-              totalTokens: number;
+      const metadata = response.response_metadata;
+      
+      if (isRecord(metadata)) {
+        if (hasProperty(metadata, "tokenUsage") && isRecord(metadata.tokenUsage)) {
+          const tokenUsage = metadata.tokenUsage;
+          if (
+            hasProperty(tokenUsage, "promptTokens") && isNumber(tokenUsage.promptTokens) &&
+            hasProperty(tokenUsage, "completionTokens") && isNumber(tokenUsage.completionTokens) &&
+            hasProperty(tokenUsage, "totalTokens") && isNumber(tokenUsage.totalTokens)
+          ) {
+            this.lastTokenUsage = {
+              promptTokens: tokenUsage.promptTokens,
+              completionTokens: tokenUsage.completionTokens,
+              totalTokens: tokenUsage.totalTokens,
             };
-            usage?: {
-              input_tokens: number;
-              output_tokens: number;
+          }
+        } else if (hasProperty(metadata, "usage") && isRecord(metadata.usage)) {
+          const usage = metadata.usage;
+          if (
+            hasProperty(usage, "input_tokens") && isNumber(usage.input_tokens) &&
+            hasProperty(usage, "output_tokens") && isNumber(usage.output_tokens)
+          ) {
+            this.lastTokenUsage = {
+              promptTokens: usage.input_tokens,
+              completionTokens: usage.output_tokens,
+              totalTokens: usage.input_tokens + usage.output_tokens,
             };
-          };
+          }
         }
-      ).response_metadata;
-
-      if (metadata?.tokenUsage) {
-        this.lastTokenUsage = {
-          promptTokens: metadata.tokenUsage.promptTokens,
-          completionTokens: metadata.tokenUsage.completionTokens,
-          totalTokens: metadata.tokenUsage.totalTokens,
-        };
-      } else if (metadata?.usage) {
-        this.lastTokenUsage = {
-          promptTokens: metadata.usage.input_tokens,
-          completionTokens: metadata.usage.output_tokens,
-          totalTokens: (metadata.usage.input_tokens || 0) + (metadata.usage.output_tokens || 0),
-        };
       }
     }
   }

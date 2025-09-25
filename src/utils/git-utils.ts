@@ -44,19 +44,31 @@ export async function getStagedDifference(
 }
 
 export async function commit(message: string, allowEmpty: boolean = false): Promise<void> {
-  const commandArguments = ["commit", "-m", message];
+  const { execFile } = await import("node:child_process");
+  const execFilePromise = promisify(execFile);
+  
+  const args = ["commit", "-m", message];
   if (allowEmpty) {
-    commandArguments.push("--allow-empty");
+    args.push("--allow-empty");
   }
 
-  const { stderr } = await executeCommand(
-    `git ${commandArguments
-      .map((argument) => (argument.includes(" ") ? `"${argument}"` : argument))
-      .join(" ")}`
-  );
+  try {
+    const { stderr } = await execFilePromise("git", args, {
+      shell: false,
+      windowsHide: true
+    });
 
-  if (stderr && !stderr.includes("create mode") && !stderr.includes("files changed")) {
-    throw new GitError(stderr);
+    if (stderr && !stderr.includes("create mode") && !stderr.includes("files changed")) {
+      throw new GitError(stderr);
+    }
+  } catch (error) {
+    if (error instanceof Error && "stderr" in error && typeof error.stderr === "string") {
+      const stderr = error.stderr;
+      if (stderr && !stderr.includes("create mode") && !stderr.includes("files changed")) {
+        throw new GitError(stderr);
+      }
+    }
+    throw error;
   }
 }
 

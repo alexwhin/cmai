@@ -1,4 +1,5 @@
 import { Provider, UsageMode, Config, CommitCandidate } from "../types/index.js";
+import { isEnumValue } from "./api-helpers.js";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
@@ -31,7 +32,7 @@ export function isValidEmail(value: unknown): value is string {
   return emailRegex.test(value) && !value.includes("..");
 }
 
-function isBoolean(value: unknown): value is boolean {
+export function isBoolean(value: unknown): value is boolean {
   return typeof value === "boolean";
 }
 
@@ -44,11 +45,11 @@ export function isPositiveNumber(value: unknown): value is number {
 }
 
 export function isValidProvider(value: unknown): value is Provider {
-  return isString(value) && (Object.values(Provider) as string[]).includes(value);
+  return isEnumValue(value, Provider);
 }
 
 export function isValidUsageMode(value: unknown): value is UsageMode {
-  return isString(value) && (Object.values(UsageMode) as string[]).includes(value);
+  return isEnumValue(value, UsageMode);
 }
 
 export function isValidConfig(value: unknown): value is Config {
