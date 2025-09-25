@@ -1,21 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mockPlatform } from "../test-helpers.js";
-
-const mockExecFilePromise = vi.fn();
-
-vi.mock("node:child_process", () => ({
-  execFile: vi.fn(),
-}));
-vi.mock("node:util", () => ({
-  promisify: vi.fn(() => mockExecFilePromise),
-}));
+import { mockPlatform, setupSystemUtilsMocks, resetAllMocks } from "../test-helpers.js";
 
 describe("system-utils", () => {
   let restorePlatform: (() => void) | undefined;
-
+  let systemMocks: ReturnType<typeof setupSystemUtilsMocks>;
+  
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockExecFilePromise.mockReset();
+    systemMocks = setupSystemUtilsMocks();
+    resetAllMocks(systemMocks.mockExecFilePromise, systemMocks.mockExecCommand, systemMocks.mockExecSync);
   });
 
   afterEach(() => {
@@ -23,6 +15,7 @@ describe("system-utils", () => {
       restorePlatform();
       restorePlatform = undefined;
     }
+    systemMocks.cleanup();
     vi.resetModules();
   });
 
@@ -48,12 +41,12 @@ describe("system-utils", () => {
 
     it("copies text successfully on macOS", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecFilePromise).toHaveBeenCalledWith(
+      expect(systemMocks.mockExecFilePromise).toHaveBeenCalledWith(
         "/bin/sh",
         ["-c", 'printf \'%s\' "test text" | pbcopy'],
         { shell: false, windowsHide: true }
@@ -62,13 +55,13 @@ describe("system-utils", () => {
 
     it("copies text successfully on Windows", async () => {
       restorePlatform = mockPlatform("win32");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
       const base64Text = Buffer.from("test text").toString("base64");
-      expect(mockExecFilePromise).toHaveBeenCalledWith(
+      expect(systemMocks.mockExecFilePromise).toHaveBeenCalledWith(
         "powershell",
         [
           "-NoProfile",
@@ -82,12 +75,12 @@ describe("system-utils", () => {
 
     it("copies text successfully on Linux with xclip", async () => {
       restorePlatform = mockPlatform("linux");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecFilePromise).toHaveBeenCalledWith(
+      expect(systemMocks.mockExecFilePromise).toHaveBeenCalledWith(
         "/bin/sh",
         ["-c", 'printf \'%s\' "test text" | xclip -selection clipboard'],
         { shell: false, windowsHide: true }
@@ -96,7 +89,7 @@ describe("system-utils", () => {
 
     it("handles command execution failure", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecFilePromise.mockRejectedValue(new Error("Command failed"));
+      systemMocks.mockExecFilePromise.mockRejectedValue(new Error("Command failed"));
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
@@ -105,7 +98,7 @@ describe("system-utils", () => {
 
     it("handles special characters correctly", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
       const specialText = 'Text with "quotes" and $variables';
@@ -115,7 +108,7 @@ describe("system-utils", () => {
 
     it("handles multiline text", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
       const multilineText = "Line 1\nLine 2\nLine 3";
@@ -125,7 +118,7 @@ describe("system-utils", () => {
 
     it("uses fallback methods on Linux when primary method fails", async () => {
       restorePlatform = mockPlatform("linux");
-      mockExecFilePromise
+      systemMocks.mockExecFilePromise
         .mockRejectedValueOnce(new Error("xclip not found"))
         .mockResolvedValueOnce({ stdout: "", stderr: "" });
 
@@ -136,7 +129,7 @@ describe("system-utils", () => {
 
     it("throws error when all methods fail", async () => {
       restorePlatform = mockPlatform("linux");
-      mockExecFilePromise.mockRejectedValue(new Error("All commands failed"));
+      systemMocks.mockExecFilePromise.mockRejectedValue(new Error("All commands failed"));
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
@@ -153,7 +146,7 @@ describe("system-utils", () => {
 
     it("handles very long text", async () => {
       restorePlatform = mockPlatform("darwin");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
       const longText = "x".repeat(10000);
@@ -505,14 +498,14 @@ describe("system-utils", () => {
 
     it("handles Windows apostrophe escaping", async () => {
       restorePlatform = mockPlatform("win32");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
       const textWithApostrophes = "It's a test's text";
 
       await expect(copyToClipboard(textWithApostrophes)).resolves.toBeUndefined();
       const base64Text = Buffer.from(textWithApostrophes).toString("base64");
-      expect(mockExecFilePromise).toHaveBeenCalledWith(
+      expect(systemMocks.mockExecFilePromise).toHaveBeenCalledWith(
         "powershell",
         [
           "-NoProfile",
@@ -526,12 +519,12 @@ describe("system-utils", () => {
 
     it("handles FreeBSD platform for clipboard", async () => {
       restorePlatform = mockPlatform("freebsd");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecFilePromise).toHaveBeenCalledWith(
+      expect(systemMocks.mockExecFilePromise).toHaveBeenCalledWith(
         "/bin/sh",
         ["-c", 'printf \'%s\' "test text" | xclip -selection clipboard'],
         { shell: false, windowsHide: true }
@@ -540,12 +533,12 @@ describe("system-utils", () => {
 
     it("handles OpenBSD platform for clipboard", async () => {
       restorePlatform = mockPlatform("openbsd");
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      systemMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 
       await expect(copyToClipboard("test text")).resolves.toBeUndefined();
-      expect(mockExecFilePromise).toHaveBeenCalledWith(
+      expect(systemMocks.mockExecFilePromise).toHaveBeenCalledWith(
         "/bin/sh",
         ["-c", 'printf \'%s\' "test text" | xclip -selection clipboard'],
         { shell: false, windowsHide: true }
@@ -554,7 +547,7 @@ describe("system-utils", () => {
 
     it("handles aggregate errors in clipboard operations", async () => {
       restorePlatform = mockPlatform("linux");
-      mockExecFilePromise.mockRejectedValue(new Error("Command failed"));
+      systemMocks.mockExecFilePromise.mockRejectedValue(new Error("Command failed"));
 
       const { copyToClipboard } = await import("../../src/utils/system-utils.js");
 

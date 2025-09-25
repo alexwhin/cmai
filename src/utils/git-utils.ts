@@ -62,8 +62,8 @@ export async function commit(message: string, allowEmpty: boolean = false): Prom
       throw new GitError(stderr);
     }
   } catch (error) {
-    if (error instanceof Error && "stderr" in error && typeof error.stderr === "string") {
-      const stderr = error.stderr;
+    if (error instanceof Error && "stderr" in error && isString((error as unknown as { stderr: unknown }).stderr)) {
+      const stderr = (error as unknown as { stderr: string }).stderr;
       if (stderr && !stderr.includes("create mode") && !stderr.includes("files changed")) {
         throw new GitError(stderr);
       }

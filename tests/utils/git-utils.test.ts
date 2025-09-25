@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-
-const mockExecuteCommand = vi.fn();
-const mockExecFilePromise = vi.fn();
-
-vi.mock("node:util", () => ({
-  promisify: vi.fn(() => mockExecuteCommand),
-}));
+import { setupGitMocks, resetAllMocks } from "../test-helpers.js";
 
 vi.mock("../../src/utils/system-utils.js", () => ({
   redactSensitiveData: vi.fn((text) => `[REDACTED] ${text}`),
@@ -18,37 +12,30 @@ vi.mock("../../src/utils/ui-utils.js", () => ({
 }));
 
 describe("git-utils", () => {
+  let gitMocks: ReturnType<typeof setupGitMocks>;
+  
   beforeEach(() => {
+    gitMocks = setupGitMocks();
     vi.clearAllMocks();
-    mockExecuteCommand.mockReset();
-    mockExecFilePromise.mockReset();
+    resetAllMocks(gitMocks.mockExecuteCommand, gitMocks.mockExecFilePromise);
     vi.resetModules();
-    
-    vi.doMock("node:child_process", () => ({
-      exec: vi.fn(),
-      execFile: vi.fn(),
-    }));
-    vi.doMock("node:util", () => ({
-      promisify: vi.fn(() => mockExecuteCommand),
-    }));
   });
   
   afterEach(() => {
-    vi.doUnmock("node:child_process");
-    vi.doUnmock("node:util");
+    gitMocks.cleanup();
   });
 
   // Core Git Commands
   describe("checkGitInstalled", () => {
     it("succeeds when git is installed", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "git version 2.39.1", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "git version 2.39.1", stderr: "" });
 
       const { checkGitInstalled } = await import("../../src/utils/git-utils.js");
       await expect(checkGitInstalled()).resolves.toBeUndefined();
     });
 
     it("throws error when git is not installed", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("command not found"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("command not found"));
 
       const { checkGitInstalled } = await import("../../src/utils/git-utils.js");
       await expect(checkGitInstalled()).rejects.toThrow("Command not found: git");
@@ -57,14 +44,14 @@ describe("git-utils", () => {
 
   describe("checkInGitRepo", () => {
     it("succeeds when in a git repository", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: ".git", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: ".git", stderr: "" });
 
       const { checkInGitRepo } = await import("../../src/utils/git-utils.js");
       await expect(checkInGitRepo()).resolves.toBeUndefined();
     });
 
     it("throws error when not in a git repository", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("not a git repository"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("not a git repository"));
 
       const { checkInGitRepo } = await import("../../src/utils/git-utils.js");
       await expect(checkInGitRepo()).rejects.toThrow("Not a git repository");
@@ -73,7 +60,7 @@ describe("git-utils", () => {
 
   describe("getStagedFiles", () => {
     it("returns list of staged files", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      gitMocks.mockExecuteCommand.mockResolvedValue({
         stdout: "file1.ts\nfile2.js\nfile3.md\n",
         stderr: "",
       });
@@ -85,7 +72,7 @@ describe("git-utils", () => {
     });
 
     it("returns empty array when no files staged", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { getStagedFiles } = await import("../../src/utils/git-utils.js");
       const files = await getStagedFiles();
@@ -94,7 +81,7 @@ describe("git-utils", () => {
     });
 
     it("handles files with special characters", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      gitMocks.mockExecuteCommand.mockResolvedValue({
         stdout: 'file with spaces.txt\n"file-with-quotes".js\nfile\\with\\backslash.ts',
         stderr: "",
       });
@@ -110,7 +97,7 @@ describe("git-utils", () => {
     });
 
     it("handles git command failure", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("Not a git repository"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("Not a git repository"));
 
       const { getStagedFiles } = await import("../../src/utils/git-utils.js");
       await expect(getStagedFiles()).rejects.toThrow();
@@ -119,7 +106,7 @@ describe("git-utils", () => {
 
   describe("getCurrentBranch", () => {
     it("returns the current branch name", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "main\n", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "main\n", stderr: "" });
 
       const { getCurrentBranch } = await import("../../src/utils/git-utils.js");
       const branch = await getCurrentBranch();
@@ -131,7 +118,7 @@ describe("git-utils", () => {
   describe("getStagedDifference", () => {
     it("returns staged differences", async () => {
       const difference = "diff --git a/file.js b/file.js\n+console.log('test');";
-      mockExecuteCommand.mockResolvedValue({ stdout: difference, stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: difference, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const result = await getStagedDifference();
@@ -141,7 +128,7 @@ describe("git-utils", () => {
 
     it("truncates long differences", async () => {
       const longDifference = "x".repeat(15000);
-      mockExecuteCommand.mockResolvedValue({ stdout: longDifference, stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: longDifference, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const result = await getStagedDifference();
@@ -151,7 +138,7 @@ describe("git-utils", () => {
 
     it("truncates very long diffs", async () => {
       const longDiff = "a".repeat(100001);
-      mockExecuteCommand.mockResolvedValue({ stdout: longDiff, stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: longDiff, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const diff = await getStagedDifference(100000);
@@ -161,7 +148,7 @@ describe("git-utils", () => {
 
     it("handles custom max length parameter", async () => {
       const diff = "a".repeat(150);
-      mockExecuteCommand.mockResolvedValue({ stdout: diff, stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: diff, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const result = await getStagedDifference(100);
@@ -171,7 +158,7 @@ describe("git-utils", () => {
 
     it("does not truncate when under limit", async () => {
       const shortDiff = "diff content";
-      mockExecuteCommand.mockResolvedValue({ stdout: shortDiff, stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: shortDiff, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const diff = await getStagedDifference();
@@ -196,10 +183,10 @@ describe("git-utils", () => {
         }),
       }));
       vi.doMock("node:util", () => ({
-        promisify: vi.fn(() => mockExecFilePromise),
+        promisify: vi.fn(() => gitMocks.mockExecFilePromise),
       }));
       
-      mockExecFilePromise.mockResolvedValue({
+      gitMocks.mockExecFilePromise.mockResolvedValue({
         stdout: "",
         stderr: "2 files changed, 10 insertions(+)",
       });
@@ -207,7 +194,7 @@ describe("git-utils", () => {
       const { commit } = await import("../../src/utils/git-utils.js");
       await expect(commit("test: add tests")).resolves.toBeUndefined();
 
-      expect(mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", "test: add tests"], {
+      expect(gitMocks.mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", "test: add tests"], {
         shell: false,
         windowsHide: true,
       });
@@ -222,15 +209,15 @@ describe("git-utils", () => {
         execFile: vi.fn(),
       }));
       vi.doMock("node:util", () => ({
-        promisify: vi.fn(() => mockExecFilePromise),
+        promisify: vi.fn(() => gitMocks.mockExecFilePromise),
       }));
       
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      gitMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { commit } = await import("../../src/utils/git-utils.js");
       await expect(commit("chore: empty commit", true)).resolves.toBeUndefined();
 
-      expect(mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", "chore: empty commit", "--allow-empty"], {
+      expect(gitMocks.mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", "chore: empty commit", "--allow-empty"], {
         shell: false,
         windowsHide: true,
       });
@@ -245,12 +232,12 @@ describe("git-utils", () => {
         execFile: vi.fn(),
       }));
       vi.doMock("node:util", () => ({
-        promisify: vi.fn(() => mockExecFilePromise),
+        promisify: vi.fn(() => gitMocks.mockExecFilePromise),
       }));
       
       const error = new Error("Command failed");
       (error as unknown as { stderr: string }).stderr = "fatal: error occurred";
-      mockExecFilePromise.mockRejectedValue(error);
+      gitMocks.mockExecFilePromise.mockRejectedValue(error);
 
       const { commit } = await import("../../src/utils/git-utils.js");
       await expect(commit("test")).rejects.toThrow("fatal: error occurred");
@@ -265,15 +252,15 @@ describe("git-utils", () => {
         execFile: vi.fn(),
       }));
       vi.doMock("node:util", () => ({
-        promisify: vi.fn(() => mockExecFilePromise),
+        promisify: vi.fn(() => gitMocks.mockExecFilePromise),
       }));
       
-      mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
+      gitMocks.mockExecFilePromise.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { commit } = await import("../../src/utils/git-utils.js");
       await commit('feat: add "quoted" feature');
 
-      expect(mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", 'feat: add "quoted" feature'], {
+      expect(gitMocks.mockExecFilePromise).toHaveBeenCalledWith("git", ["commit", "-m", 'feat: add "quoted" feature'], {
         shell: false,
         windowsHide: true,
       });
@@ -288,10 +275,10 @@ describe("git-utils", () => {
         execFile: vi.fn(),
       }));
       vi.doMock("node:util", () => ({
-        promisify: vi.fn(() => mockExecFilePromise),
+        promisify: vi.fn(() => gitMocks.mockExecFilePromise),
       }));
       
-      mockExecFilePromise.mockResolvedValue({
+      gitMocks.mockExecFilePromise.mockResolvedValue({
         stdout: "",
         stderr: "create mode 100644 new-file.txt",
       });
@@ -309,10 +296,10 @@ describe("git-utils", () => {
         execFile: vi.fn(),
       }));
       vi.doMock("node:util", () => ({
-        promisify: vi.fn(() => mockExecFilePromise),
+        promisify: vi.fn(() => gitMocks.mockExecFilePromise),
       }));
       
-      mockExecFilePromise.mockRejectedValue({
+      gitMocks.mockExecFilePromise.mockRejectedValue({
         message: "Command failed",
         stderr: "error: spec 'nonexistent' did not match any file(s)"
       });
@@ -327,7 +314,7 @@ describe("git-utils", () => {
 
   describe("getLatestCommitHash", () => {
     it("returns short commit hash", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "abc1234\n", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "abc1234\n", stderr: "" });
 
       const { getLatestCommitHash } = await import("../../src/utils/git-utils.js");
       const hash = await getLatestCommitHash();
@@ -338,7 +325,7 @@ describe("git-utils", () => {
 
   describe("getCommitStats", () => {
     it("parses commit stats correctly", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      gitMocks.mockExecuteCommand.mockResolvedValue({
         stdout: " 3 files changed, 25 insertions(+), 10 deletions(-)\n",
         stderr: "",
       });
@@ -354,7 +341,7 @@ describe("git-utils", () => {
     });
 
     it("handles singular forms", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      gitMocks.mockExecuteCommand.mockResolvedValue({
         stdout: " 1 file changed, 1 insertion(+), 1 deletion(-)\n",
         stderr: "",
       });
@@ -370,7 +357,7 @@ describe("git-utils", () => {
     });
 
     it("returns zeros for missing stats", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "", stderr: "" });
 
       const { getCommitStats } = await import("../../src/utils/git-utils.js");
       const stats = await getCommitStats();
@@ -383,7 +370,7 @@ describe("git-utils", () => {
     });
 
     it("handles partial stats output", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      gitMocks.mockExecuteCommand.mockResolvedValue({
         stdout: "3 files changed",
         stderr: "",
       });
@@ -401,7 +388,7 @@ describe("git-utils", () => {
 
   describe("getRemoteUrl", () => {
     it("returns remote URL", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      gitMocks.mockExecuteCommand.mockResolvedValue({
         stdout: "https://github.com/user/repo.git\n",
         stderr: "",
       });
@@ -413,7 +400,7 @@ describe("git-utils", () => {
     });
 
     it("returns null on error", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("no remote"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("no remote"));
 
       const { getRemoteUrl } = await import("../../src/utils/git-utils.js");
       const url = await getRemoteUrl();
@@ -424,7 +411,7 @@ describe("git-utils", () => {
 
   describe("hasUpstream", () => {
     it("returns true when upstream exists", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "origin/main\n", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "origin/main\n", stderr: "" });
 
       const { hasUpstream } = await import("../../src/utils/git-utils.js");
       const result = await hasUpstream();
@@ -433,7 +420,7 @@ describe("git-utils", () => {
     });
 
     it("returns false when no upstream", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("no upstream"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("no upstream"));
 
       const { hasUpstream } = await import("../../src/utils/git-utils.js");
       const result = await hasUpstream();
@@ -444,7 +431,7 @@ describe("git-utils", () => {
 
   describe("getAheadBehind", () => {
     it("returns ahead/behind counts", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "3\t2\n", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "3\t2\n", stderr: "" });
 
       const { getAheadBehind } = await import("../../src/utils/git-utils.js");
       const result = await getAheadBehind();
@@ -453,7 +440,7 @@ describe("git-utils", () => {
     });
 
     it("returns zeros on error", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("no upstream"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("no upstream"));
 
       const { getAheadBehind } = await import("../../src/utils/git-utils.js");
       const result = await getAheadBehind();
@@ -462,7 +449,7 @@ describe("git-utils", () => {
     });
 
     it("handles malformed output", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "invalid", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "invalid", stderr: "" });
 
       const { getAheadBehind } = await import("../../src/utils/git-utils.js");
       const result = await getAheadBehind();
@@ -471,7 +458,7 @@ describe("git-utils", () => {
     });
 
     it("handles missing values in output", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "5\t", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "5\t", stderr: "" });
 
       const { getAheadBehind } = await import("../../src/utils/git-utils.js");
       const result = await getAheadBehind();
@@ -482,17 +469,17 @@ describe("git-utils", () => {
 
   describe("getGitUserEmail", () => {
     it("returns user email from git config", async () => {
-      mockExecuteCommand.mockResolvedValue({ stdout: "alex@example.com\n", stderr: "" });
+      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: "alex@example.com\n", stderr: "" });
 
       const { getGitUserEmail } = await import("../../src/utils/git-utils.js");
       const result = await getGitUserEmail();
 
       expect(result).toBe("alex@example.com");
-      expect(mockExecuteCommand).toHaveBeenCalledWith("git config user.email");
+      expect(gitMocks.mockExecuteCommand).toHaveBeenCalledWith("git config user.email");
     });
 
     it("returns null when git config user.email is not set", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("no email"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("no email"));
 
       const { getGitUserEmail } = await import("../../src/utils/git-utils.js");
       const result = await getGitUserEmail();
@@ -503,7 +490,7 @@ describe("git-utils", () => {
 
   describe("getFormattedGitAuthor", () => {
     it("returns formatted author with username from email", async () => {
-      mockExecuteCommand
+      gitMocks.mockExecuteCommand
         .mockResolvedValueOnce({ stdout: "Alex Whinfield\n", stderr: "" }) // getGitUsername
         .mockResolvedValueOnce({ stdout: "alex@example.com\n", stderr: "" }); // getGitUserEmail
 
@@ -514,7 +501,7 @@ describe("git-utils", () => {
     });
 
     it("returns just the name when email is not available", async () => {
-      mockExecuteCommand
+      gitMocks.mockExecuteCommand
         .mockResolvedValueOnce({ stdout: "Alex Whinfield\n", stderr: "" }) // getGitUsername
         .mockRejectedValueOnce(new Error("no email")); // getGitUserEmail
 
@@ -525,7 +512,7 @@ describe("git-utils", () => {
     });
 
     it("handles missing git config with environment variables", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("no config"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("no config"));
       const originalUser = process.env.USER;
       process.env.USER = "test-user";
 
@@ -537,7 +524,7 @@ describe("git-utils", () => {
     });
 
     it("handles USERNAME env variable fallback", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("no config"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("no config"));
       const originalUser = process.env.USER;
       const originalUsername = process.env.USERNAME;
       delete process.env.USER;
@@ -552,7 +539,7 @@ describe("git-utils", () => {
     });
 
     it("handles no environment variables", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("no config"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("no config"));
       const originalUser = process.env.USER;
       const originalUsername = process.env.USERNAME;
       delete process.env.USER;
@@ -567,7 +554,7 @@ describe("git-utils", () => {
     });
 
     it("formats author with email correctly", async () => {
-      mockExecuteCommand
+      gitMocks.mockExecuteCommand
         .mockResolvedValueOnce({ stdout: "John Doe", stderr: "" })
         .mockResolvedValueOnce({ stdout: "john.doe@example.com", stderr: "" });
 
@@ -580,7 +567,7 @@ describe("git-utils", () => {
 
   describe("getRecentCommits", () => {
     it("returns commits from pull request merges when available", async () => {
-      mockExecuteCommand
+      gitMocks.mockExecuteCommand
         .mockResolvedValueOnce({
           stdout:
             "feat: add awesome feature (#123)|\nfix: resolve critical bug (#124)|\nMerge pull request #125 from feature|feat: implement new API\n",
@@ -600,7 +587,7 @@ describe("git-utils", () => {
     });
 
     it("returns empty array on error", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("git command failed"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("git command failed"));
 
       const { getRecentCommits } = await import("../../src/utils/git-utils.js");
       const commits = await getRecentCommits();
@@ -609,7 +596,7 @@ describe("git-utils", () => {
     });
 
     it("handles empty repository", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("does not have any commits"));
+      gitMocks.mockExecuteCommand.mockRejectedValue(new Error("does not have any commits"));
 
       const { getRecentCommits } = await import("../../src/utils/git-utils.js");
       const commits = await getRecentCommits();
@@ -618,7 +605,7 @@ describe("git-utils", () => {
     });
 
     it("filters out automated commits", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      gitMocks.mockExecuteCommand.mockResolvedValue({
         stdout: "Auto-merge pull request #123\nfeat: real feature\n[bot] Update dependencies",
         stderr: "",
       });
@@ -630,7 +617,7 @@ describe("git-utils", () => {
     });
 
     it("handles merge commit body extraction", async () => {
-      mockExecuteCommand.mockResolvedValue({
+      gitMocks.mockExecuteCommand.mockResolvedValue({
         stdout: "Merge pull request #123 from feature|feat: add new feature",
         stderr: "",
       });
@@ -644,7 +631,7 @@ describe("git-utils", () => {
 
   describe("getGitContext", () => {
     it("returns full git context", async () => {
-      mockExecuteCommand
+      gitMocks.mockExecuteCommand
         .mockResolvedValueOnce({ stdout: "file1.ts\nfile2.js\n", stderr: "" }) // getStagedFiles
         .mockResolvedValueOnce({ stdout: "main\n", stderr: "" }) // getCurrentBranch
         .mockResolvedValueOnce({ stdout: "feat: add (#123)|\n", stderr: "" }) // getRecentCommits - strategy 1
@@ -664,7 +651,7 @@ describe("git-utils", () => {
     });
 
     it("handles context with redaction disabled", async () => {
-      mockExecuteCommand
+      gitMocks.mockExecuteCommand
         .mockResolvedValueOnce({ stdout: "file1.ts\nfile2.js", stderr: "" }) // getStagedFiles
         .mockResolvedValueOnce({ stdout: "main", stderr: "" }) // getCurrentBranch
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getMergeCommits
@@ -680,7 +667,7 @@ describe("git-utils", () => {
     });
 
     it("handles empty recent commits gracefully", async () => {
-      mockExecuteCommand
+      gitMocks.mockExecuteCommand
         .mockResolvedValueOnce({ stdout: "file1.ts", stderr: "" }) // getStagedFiles
         .mockResolvedValueOnce({ stdout: "main", stderr: "" }) // getCurrentBranch
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getMergeCommits

@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getAvailableModels, clearModelCache, validateAndFetchModels } from "../../src/providers/models.js";
 import { Provider } from "../../src/types/index.js";
-import { createMockFetchResponse } from "../test-helpers.js";
+import { createMockFetchResponse, mockFetchSuccess, mockFetch401, mockFetch500, TEST_MODELS, expectAuthenticationError, expectNoSuitableModelsError } from "../test-helpers.js";
 
-// Mock fetch globally
 globalThis.fetch = vi.fn();
 
 describe("providers/models", () => {
@@ -19,16 +17,15 @@ describe("providers/models", () => {
       const testApiKey = "test-key";
 
       it("fetches and formats OpenAI models successfully", async () => {
-        const mockResponse = createMockFetchResponse({
+        mockFetchSuccess({
           data: [
-            { id: "gpt-4o", created: 1234567890 },
-            { id: "gpt-4-turbo", created: 1234567890 },
-            { id: "gpt-3.5-turbo", created: 1234567890 },
+            TEST_MODELS.openai.gpt4o,
+            TEST_MODELS.openai.gpt4turbo,
+            TEST_MODELS.openai.gpt35turbo,
             { id: "gpt-4-vision-preview", created: 1234567890 },
             { id: "gpt-3.5-turbo-instruct", created: 1234567890 },
           ],
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
 
         const models = await getAvailableModels(Provider.OPENAI, testApiKey);
 
@@ -45,31 +42,13 @@ describe("providers/models", () => {
       });
 
       it("handles 401 unauthorized error for OpenAI", async () => {
-        const mockResponse = createMockFetchResponse(
-          {},
-          {
-            ok: false,
-            status: 401,
-            statusText: "Unauthorized",
-          }
-        );
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        mockFetch401();
 
-        await expect(getAvailableModels(Provider.OPENAI, "invalid-key")).rejects.toThrow(
-          "Authentication failed. Please check your API key."
-        );
+        await expectAuthenticationError(getAvailableModels(Provider.OPENAI, "invalid-key"));
       });
 
       it("handles other HTTP errors for OpenAI", async () => {
-        const mockResponse = createMockFetchResponse(
-          {},
-          {
-            ok: false,
-            status: 500,
-            statusText: "Internal Server Error",
-          }
-        );
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        mockFetch500();
 
         await expect(getAvailableModels(Provider.OPENAI, testApiKey)).rejects.toThrow(
           "API request failed: 500 Internal Server Error"
@@ -77,8 +56,7 @@ describe("providers/models", () => {
       });
 
       it("handles invalid response format for OpenAI", async () => {
-        const mockResponse = createMockFetchResponse({ invalid: "response" });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        mockFetchSuccess({ invalid: "response" });
 
         await expect(getAvailableModels(Provider.OPENAI, testApiKey)).rejects.toThrow(
           "Invalid response format"
@@ -86,12 +64,9 @@ describe("providers/models", () => {
       });
 
       it("handles empty model list for OpenAI", async () => {
-        const mockResponse = createMockFetchResponse({ data: [] });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        mockFetchSuccess({ data: [] });
 
-        await expect(getAvailableModels(Provider.OPENAI, testApiKey)).rejects.toThrow(
-          "No suitable models found for OpenAI"
-        );
+        await expectNoSuitableModelsError(getAvailableModels(Provider.OPENAI, testApiKey), "OpenAI");
       });
 
       it("filters out deprecated and special models", async () => {

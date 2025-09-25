@@ -8,7 +8,7 @@ import { ConfigurationNotFoundError, InvalidConfigurationError } from "./errors.
 import { message } from "./ui-utils.js";
 import { t } from "./i18n.js";
 import { FILE_SYSTEM, DEFAULTS } from "../constants.js";
-import { isJSONString, isValidConfig, isString } from "./guards.js";
+import { isJSONString, isValidConfig, isString, isNumber } from "./guards.js";
 
 const { CONFIG_DIRECTORY, CONFIG_FILENAME, SCHEMA_FILENAME, SCHEMA_URL } = FILE_SYSTEM;
 const CONFIG_FILE_PATH = join(CONFIG_DIRECTORY, CONFIG_FILENAME);
@@ -151,7 +151,7 @@ function parseMaxCommitLength(value: string | undefined): number | undefined {
   }
 
   const parsed = parseInt(value, 10);
-  return isNaN(parsed) ? undefined : parsed;
+  return isNumber(parsed) ? parsed : undefined;
 }
 
 function parseUsageMode(value: string | undefined): UsageMode | undefined {
