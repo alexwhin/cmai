@@ -81,13 +81,13 @@ export function getLanguageChoices(): Array<{ title: string; value: Language }> 
   const english = Language.EN;
   const otherLanguages = languages.filter((lang) => lang !== english);
 
-  const languagesWithNames = otherLanguages.map(lang => ({
+  const languagesWithNames = otherLanguages.map((lang) => ({
     lang,
-    name: getLanguageDisplayName(lang)
+    name: getLanguageDisplayName(lang),
   }));
-  
+
   const sortedOthers = sortByKey(languagesWithNames, "name");
-  const sortedLanguages = sortedOthers.map(item => item.lang);
+  const sortedLanguages = sortedOthers.map((item) => item.lang);
 
   const orderedLanguages = [english, ...sortedLanguages];
 

@@ -116,31 +116,31 @@ export async function validateAndFetchModels(
 }
 
 function filterModels(models: ModelInfo[], options: ModelFilterOptions): ModelInfo[] {
-  return models.filter(model => {
+  return models.filter((model) => {
     const modelId = model.id.toLowerCase();
-    
+
     if (options.allowList && options.allowList.length > 0) {
       return options.allowList.includes(model.id);
     }
-    
+
     if (options.includePatterns) {
-      const hasInclude = options.includePatterns.some(pattern => 
+      const hasInclude = options.includePatterns.some((pattern) =>
         modelId.includes(pattern.toLowerCase())
       );
       if (!hasInclude) {
-return false;
-}
+        return false;
+      }
     }
-    
+
     if (options.excludePatterns) {
-      const hasExclude = options.excludePatterns.some(pattern => 
+      const hasExclude = options.excludePatterns.some((pattern) =>
         modelId.includes(pattern.toLowerCase())
       );
       if (hasExclude) {
-return false;
-}
+        return false;
+      }
     }
-    
+
     return true;
   });
 }
@@ -151,45 +151,48 @@ function parseModelsFromResponse(
   nameField?: string
 ): ModelInfo[] {
   const models: ModelInfo[] = [];
-  
+
   for (const item of data) {
     if (isRecord(item) && hasProperty(item, idField) && isString(item[idField])) {
       const id = item[idField];
       let name = id;
-      
+
       if (nameField && hasProperty(item, nameField) && isString(item[nameField])) {
         name = item[nameField];
       }
-      
+
       models.push({ id, name });
     }
   }
-  
+
   return models;
 }
 
 function parseGeminiModels(data: unknown[]): ModelInfo[] {
   const models: ModelInfo[] = [];
-  
+
   for (const item of data) {
     if (
-      isRecord(item) && 
-      hasProperty(item, "name") && 
+      isRecord(item) &&
+      hasProperty(item, "name") &&
       isString(item.name) &&
       hasProperty(item, "supportedGenerationMethods") &&
       isArray(item.supportedGenerationMethods) &&
       item.supportedGenerationMethods.includes("generateContent")
     ) {
       const modelName = item.name.replace("models/", "");
-      const displayName = hasProperty(item, "displayName") && isString(item.displayName)? item.displayName: modelName;
-      
+      const displayName =
+        hasProperty(item, "displayName") && isString(item.displayName)
+          ? item.displayName
+          : modelName;
+
       models.push({
         id: modelName,
         name: displayName,
       });
     }
   }
-  
+
   return models;
 }
 
@@ -210,7 +213,7 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
     const allModels = parseModelsFromResponse(data.data);
     const gptModels = filterModels(allModels, {
       includePatterns: ["gpt"],
-      excludePatterns: ["instruct", "0301", "0314", "vision"]
+      excludePatterns: ["instruct", "0301", "0314", "vision"],
     });
 
     if (gptModels.length === 0) {
@@ -241,7 +244,7 @@ async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
     const allModels = parseModelsFromResponse(data.data, "id", "display_name");
     const claudeModels = filterModels(allModels, {
       includePatterns: ["claude"],
-      excludePatterns: ["instant"]
+      excludePatterns: ["instant"],
     });
 
     if (claudeModels.length === 0) {
@@ -284,12 +287,15 @@ async function fetchOllamaModels(apiKey: string): Promise<ModelInfo[]> {
 
 async function fetchGeminiModels(apiKey: string): Promise<ModelInfo[]> {
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     validateApiResponse(response, Provider.GEMINI, [401, 403]);
 
@@ -300,7 +306,7 @@ async function fetchGeminiModels(apiKey: string): Promise<ModelInfo[]> {
     const allModels = parseGeminiModels(data.models);
 
     const geminiModels = filterModels(allModels, {
-      excludePatterns: ["-instant-"]
+      excludePatterns: ["-instant-"],
     });
 
     if (geminiModels.length === 0) {

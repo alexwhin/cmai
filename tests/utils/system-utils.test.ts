@@ -662,6 +662,37 @@ describe("system-utils", () => {
       expect(version).toBe("0.2.1");
     });
 
+    it("returns correct version when package.json is in current working directory", async () => {
+      const cwdPackageJson = JSON.stringify({ name: "cmai", version: "1.0.0" });
+      const cwd = process.cwd();
+      mockReadFileSync.mockImplementation((path: string) => {
+        if (path === `${cwd}/package.json`) {
+          return cwdPackageJson;
+        }
+        throw new Error("File not found");
+      });
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const version = getPackageVersion();
+      
+      expect(version).toBe("1.0.0");
+    });
+
+    it("returns fallback version when cwd package.json is invalid JSON", async () => {
+      const cwd = process.cwd();
+      mockReadFileSync.mockImplementation((path: string) => {
+        if (path === `${cwd}/package.json`) {
+          return "{ invalid json";
+        }
+        throw new Error("File not found");
+      });
+      
+      const { getPackageVersion } = await import("../../src/utils/system-utils.js");
+      const version = getPackageVersion();
+      
+      expect(version).toBe("0.2.1");
+    });
+
     it("returns fallback version when readFileSync fails", async () => {
       mockReadFileSync.mockImplementation(() => {
         throw new Error("File not found");

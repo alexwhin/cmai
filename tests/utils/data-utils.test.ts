@@ -6,7 +6,7 @@ import {
   ReportData,
 } from "../../src/utils/data-utils.js";
 import { Provider, UsageMode, GitContext } from "../../src/types/index.js";
-import * as GitUtils from "../../src/utils/git-utils.js";
+import { getFormattedGitAuthor, getRemoteUrl } from "../../src/utils/git-utils.js";
 
 vi.mock("../../src/utils/git-utils.js", () => ({
   getFormattedGitAuthor: vi.fn(),
@@ -149,8 +149,8 @@ describe("data-utils", () => {
       vi.clearAllMocks();
       vi.setSystemTime(new Date("2024-01-15 14:30:00"));
 
-      vi.mocked(GitUtils.getFormattedGitAuthor).mockResolvedValue("Test User (testuser)");
-      vi.mocked(GitUtils.getRemoteUrl).mockResolvedValue("https://github.com/test/repo.git");
+      vi.mocked(getFormattedGitAuthor).mockResolvedValue("Test User (testuser)");
+      vi.mocked(getRemoteUrl).mockResolvedValue("https://github.com/test/repo.git");
     });
 
     it("includes basic stats for all modes", async () => {
@@ -288,7 +288,7 @@ describe("data-utils", () => {
     });
 
     it("handles missing repository URL", async () => {
-      vi.mocked(GitUtils.getRemoteUrl).mockResolvedValue(null);
+      vi.mocked(getRemoteUrl).mockResolvedValue(null);
 
       const result = await generateReport("feat: test", mockContext, UsageMode.CLIPBOARD);
 

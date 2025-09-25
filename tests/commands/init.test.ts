@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import prompts from "prompts";
 import { initCommand } from "../../src/commands/init.js";
-import * as ConfigManager from "../../src/utils/config.js";
-import * as ConfigFlow from "../../src/utils/ui-utils.js";
-import { message } from "../../src/utils/ui-utils.js";
+import { configurationExists, saveConfiguration } from "../../src/utils/config.js";
+import { message, promptProvider, promptApiKey, validateApiKey, validateAndSelectModel, promptMaxCommitLength, promptCommitChoicesCount, promptRedactSensitiveData, promptUsageMode, promptUILanguage, promptCommitLanguage, promptCustomRules } from "../../src/utils/ui-utils.js";
 import { Provider, UsageMode, Language } from "../../src/types/index.js";
 
 vi.mock("prompts");
@@ -22,54 +21,54 @@ describe("commands/init", () => {
   });
 
   it("completes full initialization flow", async () => {
-    vi.mocked(ConfigManager.configurationExists).mockResolvedValue(false);
+    vi.mocked(configurationExists).mockResolvedValue(false);
 
-    vi.mocked(ConfigFlow.promptProvider).mockResolvedValue({
+    vi.mocked(promptProvider).mockResolvedValue({
       value: Provider.OPENAI,
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptApiKey).mockResolvedValue({
+    vi.mocked(promptApiKey).mockResolvedValue({
       value: "test-key",
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.validateApiKey).mockResolvedValue(true);
-    vi.mocked(ConfigFlow.validateAndSelectModel).mockResolvedValue({
+    vi.mocked(validateApiKey).mockResolvedValue(true);
+    vi.mocked(validateAndSelectModel).mockResolvedValue({
       value: "gpt-4",
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptMaxCommitLength).mockResolvedValue({
+    vi.mocked(promptMaxCommitLength).mockResolvedValue({
       value: 72,
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptCommitChoicesCount).mockResolvedValue({
+    vi.mocked(promptCommitChoicesCount).mockResolvedValue({
       value: 5,
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptRedactSensitiveData).mockResolvedValue({
+    vi.mocked(promptRedactSensitiveData).mockResolvedValue({
       value: true,
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptUsageMode).mockResolvedValue({
+    vi.mocked(promptUsageMode).mockResolvedValue({
       value: UsageMode.CLIPBOARD,
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptUILanguage).mockResolvedValue({
+    vi.mocked(promptUILanguage).mockResolvedValue({
       value: Language.EN,
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptCommitLanguage).mockResolvedValue({
+    vi.mocked(promptCommitLanguage).mockResolvedValue({
       value: Language.EN,
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptCustomRules).mockResolvedValue({
+    vi.mocked(promptCustomRules).mockResolvedValue({
       value: [],
       cancelled: false,
     });
-    vi.mocked(ConfigManager.saveConfiguration).mockResolvedValue();
+    vi.mocked(saveConfiguration).mockResolvedValue();
 
     await initCommand();
 
-    expect(ConfigManager.saveConfiguration).toHaveBeenCalledWith({
+    expect(saveConfiguration).toHaveBeenCalledWith({
       provider: Provider.OPENAI,
       apiKey: "test-key",
       model: "gpt-4",
@@ -87,7 +86,7 @@ describe("commands/init", () => {
   });
 
   it("prompts for overwrite when configuration exists", async () => {
-    vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
+    vi.mocked(configurationExists).mockResolvedValue(true);
     vi.mocked(prompts).mockResolvedValue({ overwrite: false });
 
     await initCommand();
@@ -102,12 +101,12 @@ describe("commands/init", () => {
       type: "warning",
       variant: "title",
     });
-    expect(ConfigManager.saveConfiguration).not.toHaveBeenCalled();
+    expect(saveConfiguration).not.toHaveBeenCalled();
   });
 
   it("cancels when provider selection is cancelled", async () => {
-    vi.mocked(ConfigManager.configurationExists).mockResolvedValue(false);
-    vi.mocked(ConfigFlow.promptProvider).mockResolvedValue({
+    vi.mocked(configurationExists).mockResolvedValue(false);
+    vi.mocked(promptProvider).mockResolvedValue({
       value: undefined,
       cancelled: true,
     });
@@ -115,7 +114,7 @@ describe("commands/init", () => {
     await initCommand();
 
     expect(message).toHaveBeenCalledWith("Setup cancelled.", { type: "warning", variant: "title" });
-    expect(ConfigManager.saveConfiguration).not.toHaveBeenCalled();
+    expect(saveConfiguration).not.toHaveBeenCalled();
   });
 
   it("exits when API key validation fails", async () => {
@@ -123,16 +122,16 @@ describe("commands/init", () => {
       throw new Error("Process exit");
     });
 
-    vi.mocked(ConfigManager.configurationExists).mockResolvedValue(false);
-    vi.mocked(ConfigFlow.promptProvider).mockResolvedValue({
+    vi.mocked(configurationExists).mockResolvedValue(false);
+    vi.mocked(promptProvider).mockResolvedValue({
       value: Provider.OPENAI,
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.promptApiKey).mockResolvedValue({
+    vi.mocked(promptApiKey).mockResolvedValue({
       value: "invalid-key",
       cancelled: false,
     });
-    vi.mocked(ConfigFlow.validateApiKey).mockResolvedValue(false);
+    vi.mocked(validateApiKey).mockResolvedValue(false);
 
     await expect(initCommand()).rejects.toThrow("Process would exit with code 1");
 
@@ -144,12 +143,12 @@ describe("commands/init", () => {
       {
         step: "API key",
         setup: () => {
-          vi.mocked(ConfigManager.configurationExists).mockResolvedValue(false);
-          vi.mocked(ConfigFlow.promptProvider).mockResolvedValue({
+          vi.mocked(configurationExists).mockResolvedValue(false);
+          vi.mocked(promptProvider).mockResolvedValue({
             value: Provider.OPENAI,
             cancelled: false,
           });
-          vi.mocked(ConfigFlow.promptApiKey).mockResolvedValue({
+          vi.mocked(promptApiKey).mockResolvedValue({
             value: undefined,
             cancelled: true,
           });
@@ -158,17 +157,17 @@ describe("commands/init", () => {
       {
         step: "Model selection",
         setup: () => {
-          vi.mocked(ConfigManager.configurationExists).mockResolvedValue(false);
-          vi.mocked(ConfigFlow.promptProvider).mockResolvedValue({
+          vi.mocked(configurationExists).mockResolvedValue(false);
+          vi.mocked(promptProvider).mockResolvedValue({
             value: Provider.OPENAI,
             cancelled: false,
           });
-          vi.mocked(ConfigFlow.promptApiKey).mockResolvedValue({
+          vi.mocked(promptApiKey).mockResolvedValue({
             value: "test-key",
             cancelled: false,
           });
-          vi.mocked(ConfigFlow.validateApiKey).mockResolvedValue(true);
-          vi.mocked(ConfigFlow.validateAndSelectModel).mockResolvedValue({
+          vi.mocked(validateApiKey).mockResolvedValue(true);
+          vi.mocked(validateAndSelectModel).mockResolvedValue({
             value: undefined,
             cancelled: true,
           });
@@ -186,7 +185,7 @@ describe("commands/init", () => {
         type: "warning",
         variant: "title",
       });
-      expect(ConfigManager.saveConfiguration).not.toHaveBeenCalled();
+      expect(saveConfiguration).not.toHaveBeenCalled();
     }
   });
 

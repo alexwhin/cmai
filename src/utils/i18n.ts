@@ -167,7 +167,10 @@ export function getValidationMessage(
   }
 
   if (type === "maxLength" || type === "choicesCount") {
-    const limits = type === "maxLength" ? { min: VALIDATION_LIMITS.MIN_COMMIT_LENGTH, max: VALIDATION_LIMITS.MAX_COMMIT_LENGTH } : { min: VALIDATION_LIMITS.MIN_COMMIT_CHOICES, max: VALIDATION_LIMITS.MAX_COMMIT_CHOICES };
+    const limits =
+      type === "maxLength"
+        ? { min: VALIDATION_LIMITS.MIN_COMMIT_LENGTH, max: VALIDATION_LIMITS.MAX_COMMIT_LENGTH }
+        : { min: VALIDATION_LIMITS.MIN_COMMIT_CHOICES, max: VALIDATION_LIMITS.MAX_COMMIT_CHOICES };
 
     const translationKey =
       type === "maxLength" ? "validation.maxCommitLengthRange" : "validation.commitChoicesRange";

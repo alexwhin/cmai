@@ -188,7 +188,9 @@ class PromptValidator {
 class PromptFactory {
   static createProviderPrompt(currentProvider?: Provider): prompts.PromptObject {
     const isUpdate = !!currentProvider;
-    const message = isUpdate ? getPromptMessage("SELECT_NEW_PROVIDER") : getPromptMessage("SELECT_PROVIDER");
+    const message = isUpdate
+      ? getPromptMessage("SELECT_NEW_PROVIDER")
+      : getPromptMessage("SELECT_PROVIDER");
     const initial = isUpdate ? Object.values(Provider).indexOf(currentProvider) : 0;
 
     return {
@@ -217,14 +219,14 @@ class PromptFactory {
     if (!models || models.length === 0) {
       throw new NoSuitableModelsError("provider");
     }
-    
+
     const choices = models.map((model) => ({
       title: model.name || model.id,
       value: model.id,
     }));
-    
+
     const initialIndex = currentModel ? models.findIndex((m) => m.id === currentModel) : 0;
-    
+
     return {
       type: "select" as const,
       name: "model",
@@ -237,7 +239,9 @@ class PromptFactory {
 
   static createUsageModePrompt(currentMode?: UsageMode): prompts.PromptObject {
     const isUpdate = !!currentMode;
-    const message = isUpdate ? getPromptMessage("SELECT_USAGE_MODE") : getPromptMessage("SELECT_USAGE_MODE");
+    const message = isUpdate
+      ? getPromptMessage("SELECT_USAGE_MODE")
+      : getPromptMessage("SELECT_USAGE_MODE");
     const initial = isUpdate ? Object.values(UsageMode).indexOf(currentMode) : 0;
 
     return {
@@ -254,9 +258,13 @@ class PromptFactory {
     currentLanguage?: Language,
     isCommitLanguage: boolean = false
   ): prompts.PromptObject {
-    const message = isCommitLanguage ? t("prompts.selectCommitLanguage") : t("prompts.selectUILanguage");
+    const message = isCommitLanguage
+      ? t("prompts.selectCommitLanguage")
+      : t("prompts.selectUILanguage");
     const choices = isCommitLanguage ? getLanguageChoices() : getUILanguageChoices();
-    const initial = currentLanguage ? choices.findIndex((choice) => choice.value === currentLanguage) : 0;
+    const initial = currentLanguage
+      ? choices.findIndex((choice) => choice.value === currentLanguage)
+      : 0;
 
     return {
       type: "select" as const,
@@ -476,7 +484,7 @@ export async function validateAndSelectModel(
   try {
     const models = await getAvailableModels(provider, apiKey);
     spinner(t("prompts.modelsLoaded"), "succeed");
-    
+
     if (!models || models.length === 0) {
       throw new NoSuitableModelsError(getProviderDisplayName(provider));
     }

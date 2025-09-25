@@ -6,6 +6,7 @@ import {
   formatRegenerationNote,
   formatCustomRulesSection,
   formatLanguageRule,
+  formatCommitlintRulesSection,
 } from "./prompts.js";
 import {
   InvalidResponseObjectError,
@@ -60,6 +61,7 @@ export abstract class LangChainBaseProvider implements AIProvider {
         recentCommitsSection: formatRecentCommitsSection(context.recentCommits),
         regenerationNote: formatRegenerationNote(context.regenerationAttempts),
         customRulesSection: formatCustomRulesSection(this.customRules),
+        commitlintRulesSection: formatCommitlintRulesSection(context.commitlintRules),
         branch: context.branch,
         files: context.stagedFiles.join(", "),
         difference: context.difference.substring(0, GIT.DIFF_TRUNCATION_LIMIT),
@@ -110,6 +112,7 @@ export abstract class LangChainBaseProvider implements AIProvider {
       recentCommitsSection: formatRecentCommitsSection(context.recentCommits),
       regenerationNote: formatRegenerationNote(context.regenerationAttempts),
       customRulesSection: formatCustomRulesSection(this.customRules),
+      commitlintRulesSection: formatCommitlintRulesSection(context.commitlintRules),
       branch: context.branch,
       files: context.stagedFiles.join(", "),
       difference: context.difference.substring(0, 3000),
@@ -173,7 +176,9 @@ export abstract class LangChainBaseProvider implements AIProvider {
       message(
         t("ai.jsonParsingFailed", {
           error:
-            error instanceof Error ? error.message : t("errors.unknown", { message: String(error) }),
+            error instanceof Error
+              ? error.message
+              : t("errors.unknown", { message: String(error) }),
         }),
         { type: "warning", variant: "title" }
       );
@@ -239,14 +244,17 @@ export abstract class LangChainBaseProvider implements AIProvider {
 
     if (isRecord(response) && hasProperty(response, "response_metadata")) {
       const metadata = response.response_metadata;
-      
+
       if (isRecord(metadata)) {
         if (hasProperty(metadata, "tokenUsage") && isRecord(metadata.tokenUsage)) {
           const tokenUsage = metadata.tokenUsage;
           if (
-            hasProperty(tokenUsage, "promptTokens") && isNumber(tokenUsage.promptTokens) &&
-            hasProperty(tokenUsage, "completionTokens") && isNumber(tokenUsage.completionTokens) &&
-            hasProperty(tokenUsage, "totalTokens") && isNumber(tokenUsage.totalTokens)
+            hasProperty(tokenUsage, "promptTokens") &&
+            isNumber(tokenUsage.promptTokens) &&
+            hasProperty(tokenUsage, "completionTokens") &&
+            isNumber(tokenUsage.completionTokens) &&
+            hasProperty(tokenUsage, "totalTokens") &&
+            isNumber(tokenUsage.totalTokens)
           ) {
             this.lastTokenUsage = {
               promptTokens: tokenUsage.promptTokens,
@@ -257,8 +265,10 @@ export abstract class LangChainBaseProvider implements AIProvider {
         } else if (hasProperty(metadata, "usage") && isRecord(metadata.usage)) {
           const usage = metadata.usage;
           if (
-            hasProperty(usage, "input_tokens") && isNumber(usage.input_tokens) &&
-            hasProperty(usage, "output_tokens") && isNumber(usage.output_tokens)
+            hasProperty(usage, "input_tokens") &&
+            isNumber(usage.input_tokens) &&
+            hasProperty(usage, "output_tokens") &&
+            isNumber(usage.output_tokens)
           ) {
             this.lastTokenUsage = {
               promptTokens: usage.input_tokens,

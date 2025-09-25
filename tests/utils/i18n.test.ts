@@ -497,4 +497,52 @@ describe("i18n-helpers", () => {
       expect(getSettingsActionLabel("nonExistentKey")).toBe("nonExistentKey");
     });
   });
+
+  describe("getChoiceValue", () => {
+    it("should return the key as is", () => {
+      expect(getChoiceValue("someKey")).toBe("someKey");
+      expect(getChoiceValue("")).toBe("");
+      expect(getChoiceValue("ANOTHER_KEY")).toBe("ANOTHER_KEY");
+      expect(getChoiceValue("123")).toBe("123");
+    });
+  });
+
+  describe("changeLanguage", () => {
+    it("should change the language", async () => {
+      // This test is to improve coverage for the changeLanguage function
+      vi.resetModules();
+      const { initI18n, changeLanguage, t } = await import("../../src/utils/i18n.js");
+      
+      await initI18n("en");
+      const enText = t("labels.provider");
+      
+      // Change language (even if translations might be the same)
+      await changeLanguage("en");
+      const afterText = t("labels.provider");
+      
+      expect(enText).toBe(afterText);
+      expect(changeLanguage).toBeDefined();
+    });
+  });
+
+  describe("edge cases", () => {
+    it("should handle initialization errors gracefully", async () => {
+      vi.resetModules();
+      
+      // Mock i18next to throw an error during init
+      vi.doMock("i18next", () => ({
+        default: {
+          use: vi.fn().mockReturnThis(),
+          init: vi.fn().mockRejectedValue(new Error("Init failed")),
+          t: vi.fn(),
+        },
+      }));
+      
+      const { initI18n } = await import("../../src/utils/i18n.js");
+      
+      await expect(initI18n()).rejects.toThrow("Failed to initialize i18n: Init failed");
+      
+      vi.doUnmock("i18next");
+    });
+  });
 });

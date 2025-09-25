@@ -79,7 +79,7 @@ describe("providers/models", () => {
             { id: "gpt-3.5-turbo-instruct", created: 1234567890 },
           ],
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         const models = await getAvailableModels(Provider.OPENAI, testApiKey);
 
@@ -101,7 +101,7 @@ describe("providers/models", () => {
             { id: "claude-instant-1.2", display_name: "Claude Instant" },
           ],
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         const models = await getAvailableModels(Provider.ANTHROPIC, testApiKey);
 
@@ -127,7 +127,7 @@ describe("providers/models", () => {
             statusText: "Unauthorized",
           }
         );
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         await expect(getAvailableModels(Provider.ANTHROPIC, "invalid-key")).rejects.toThrow(
           "Authentication failed. Please check your API key."
@@ -138,7 +138,7 @@ describe("providers/models", () => {
         const mockResponse = createMockFetchResponse({
           data: [{ id: "claude-3-5-sonnet-20241022" }, { id: "claude-3-haiku-20240307" }],
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         const models = await getAvailableModels(Provider.ANTHROPIC, testApiKey);
 
@@ -154,7 +154,7 @@ describe("providers/models", () => {
             { id: "claude-instant-1.1" },
           ],
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         const models = await getAvailableModels(Provider.ANTHROPIC, testApiKey);
 
@@ -183,7 +183,7 @@ describe("providers/models", () => {
             { name: "mistral", size: "4.1GB", digest: "ghi789" },
           ],
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         const models = await getAvailableModels(Provider.OLLAMA, "");
 
@@ -206,7 +206,7 @@ describe("providers/models", () => {
             { name: "llama2", size: "3.8GB", digest: "abc123" },
           ],
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         const models = await getAvailableModels(Provider.OLLAMA, "http://custom:11434");
 
@@ -225,7 +225,7 @@ describe("providers/models", () => {
         const mockResponse = createMockFetchResponse({
           models: [],
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         await expect(getAvailableModels(Provider.OLLAMA, "")).rejects.toThrow(
           "No suitable models found"
@@ -236,7 +236,7 @@ describe("providers/models", () => {
         const mockResponse = createMockFetchResponse({
           error: "Invalid response",
         });
-        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+        vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
         await expect(getAvailableModels(Provider.OLLAMA, "")).rejects.toThrow(
           "Invalid response format"
@@ -261,7 +261,7 @@ describe("providers/models", () => {
           { id: "gpt-4-turbo", created: 1234567890 },
         ],
       });
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       // First call - should hit API
       const models1 = await getAvailableModels(Provider.OPENAI, "test-key");
@@ -279,7 +279,7 @@ describe("providers/models", () => {
       const mockResponse = createMockFetchResponse({
         data: [{ id: "gpt-4o", created: 1234567890 }],
       });
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       await getAvailableModels(Provider.OPENAI, "key1");
       await getAvailableModels(Provider.OPENAI, "key2");
@@ -288,12 +288,12 @@ describe("providers/models", () => {
     });
 
     it("handles concurrent requests efficiently", async () => {
-      let resolvePromise: (value: any) => void;
+      let resolvePromise: (value: unknown) => void;
       const promise = new Promise((resolve) => {
         resolvePromise = resolve;
       });
       
-      vi.mocked(globalThis.fetch).mockReturnValue(promise as any);
+      vi.mocked(globalThis.fetch).mockReturnValue(promise as unknown as Promise<globalThis.Response>);
 
       // Make two concurrent requests
       const request1 = getAvailableModels(Provider.OPENAI, "test-key");
@@ -318,7 +318,7 @@ describe("providers/models", () => {
       const mockResponse = createMockFetchResponse({
         data: [{ id: "gpt-4o", created: 1234567890 }],
       });
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       const result = await validateAndFetchModels(Provider.OPENAI, "valid-key");
       
@@ -336,7 +336,7 @@ describe("providers/models", () => {
           statusText: "Unauthorized",
         }
       );
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       const result = await validateAndFetchModels(Provider.OPENAI, "invalid-key");
       
@@ -387,7 +387,7 @@ describe("providers/models", () => {
           },
         ],
       });
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       const models = await getAvailableModels(Provider.GEMINI, testApiKey);
 
@@ -414,7 +414,7 @@ describe("providers/models", () => {
           statusText: "Unauthorized",
         }
       );
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       await expect(getAvailableModels(Provider.GEMINI, "invalid-key")).rejects.toThrow(
         "Authentication failed"
@@ -430,7 +430,7 @@ describe("providers/models", () => {
           statusText: "Forbidden",
         }
       );
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       await expect(getAvailableModels(Provider.GEMINI, "invalid-key")).rejects.toThrow(
         "Authentication failed"
@@ -441,7 +441,7 @@ describe("providers/models", () => {
       const mockResponse = createMockFetchResponse({
         models: [],
       });
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       await expect(getAvailableModels(Provider.GEMINI, testApiKey)).rejects.toThrow(
         "No suitable models"
@@ -473,7 +473,7 @@ describe("providers/models", () => {
           },
         ],
       });
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       const models = await getAvailableModels(Provider.GEMINI, testApiKey);
 
@@ -491,7 +491,7 @@ describe("providers/models", () => {
       const mockResponse = createMockFetchResponse({
         data: [],
       });
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       await expect(getAvailableModels(Provider.ANTHROPIC, "test-key")).rejects.toThrow(
         "No suitable models"
@@ -504,7 +504,7 @@ describe("providers/models", () => {
       const mockResponse = createMockFetchResponse({
         models: [],
       });
-      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(mockResponse as unknown as globalThis.Response);
 
       await expect(getAvailableModels(Provider.OLLAMA, "http://localhost:11434")).rejects.toThrow(
         "No suitable models"

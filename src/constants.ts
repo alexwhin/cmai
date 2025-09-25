@@ -63,7 +63,6 @@ export const GIT = {
   ],
 } as const;
 
-
 export const VALIDATION = {
   API_KEY_REQUIRED: (value: string) => value.length > 0 || "API key is required",
 } as const;

@@ -2,9 +2,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import prompts from "prompts";
 import { generateCommand } from "../../src/commands/generate.js";
-import * as ConfigManager from "../../src/utils/config.js";
-import * as GitUtils from "../../src/utils/git-utils.js";
-import * as ClipboardUtils from "../../src/utils/system-utils.js";
+import { configurationExists, loadConfiguration, getConfigurationWithEnvironmentOverrides } from "../../src/utils/config.js";
+import { checkGitInstalled, checkInGitRepo, getGitContext, commit, getLatestCommitHash, getCommitStats, hasUpstream, getAheadBehind, getRemoteUrl } from "../../src/utils/git-utils.js";
+import { copyToClipboard } from "../../src/utils/system-utils.js";
 import { createProvider, createProviderFromConfig } from "../../src/providers/index.js";
 import { exitWithError, errorWithDebug, message } from "../../src/utils/ui-utils.js";
 import { Provider, UsageMode } from "../../src/types/index.js";
@@ -87,7 +87,7 @@ describe("commands/generate", () => {
 
   describe("configuration check", () => {
     it("exits when no configuration exists", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(false);
+      vi.mocked(configurationExists).mockResolvedValue(false);
 
       await expect(generateCommand({ dryrun: false })).rejects.toThrow(
         "Configuration not found. Please run 'cmai init' to set up your configuration"
@@ -97,34 +97,34 @@ describe("commands/generate", () => {
 
   describe("git checks", () => {
     it("performs git checks", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue(
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
         mockConfiguration
       );
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
       vi.mocked(mockProvider.generateCandidates).mockResolvedValue(["feat: add new feature"]);
       vi.mocked(prompts).mockResolvedValue({ selection: "feat: add new feature" });
 
       await generateCommand({ dryrun: false });
 
-      expect(GitUtils.checkGitInstalled).toHaveBeenCalled();
-      expect(GitUtils.checkInGitRepo).toHaveBeenCalled();
+      expect(checkGitInstalled).toHaveBeenCalled();
+      expect(checkInGitRepo).toHaveBeenCalled();
     });
   });
 
   describe("staged files check", () => {
     it("exits when no files staged without allowEmpty", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue(
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
         mockConfiguration
       );
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue({
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue({
         ...mockContext,
         stagedFiles: [],
       });
@@ -137,14 +137,14 @@ describe("commands/generate", () => {
 
   describe("dry run mode", () => {
     it("shows prompt preview in dry run mode", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue(
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
         mockConfiguration
       );
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
       vi.mocked(mockProvider.buildPrompt).mockReturnValue("Test prompt");
       vi.mocked(prompts).mockResolvedValueOnce({ proceed: false });
 
@@ -161,14 +161,14 @@ describe("commands/generate", () => {
 
   describe("commit message generation", () => {
     it("generates and displays commit messages", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue(
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
         mockConfiguration
       );
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
       vi.mocked(mockProvider.generateCandidates).mockResolvedValue([
         "feat: add new feature",
         "feat: implement feature",
@@ -182,14 +182,14 @@ describe("commands/generate", () => {
     });
 
     it("handles regeneration", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue(
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
         mockConfiguration
       );
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
       vi.mocked(mockProvider.generateCandidates)
         .mockResolvedValueOnce(["feat: first"])
         .mockResolvedValueOnce(["feat: second"]);
@@ -209,21 +209,21 @@ describe("commands/generate", () => {
 
   describe("usage modes", () => {
     it("copies to clipboard in clipboard mode", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue(
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
         mockConfiguration
       );
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
       vi.mocked(mockProvider.generateCandidates).mockResolvedValue(["feat: add feature"]);
       vi.mocked(prompts).mockResolvedValue({ selection: "feat: add feature" });
-      vi.mocked(ClipboardUtils.copyToClipboard).mockResolvedValue();
+      vi.mocked(copyToClipboard).mockResolvedValue();
 
       await generateCommand({ dryrun: false });
 
-      expect(ClipboardUtils.copyToClipboard).toHaveBeenCalledWith("feat: add feature");
+      expect(copyToClipboard).toHaveBeenCalledWith("feat: add feature");
       expect(message).toHaveBeenCalledWith(
         "",
         expect.objectContaining({
@@ -239,34 +239,34 @@ describe("commands/generate", () => {
     });
 
     it("creates commit in commit mode", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue({
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue({
         ...mockConfiguration,
         usageMode: UsageMode.COMMIT,
       });
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue({
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue({
         ...mockConfiguration,
         usageMode: UsageMode.COMMIT,
       });
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
-      vi.mocked(GitUtils.commit).mockResolvedValue();
-      vi.mocked(GitUtils.getLatestCommitHash).mockResolvedValue("abc123");
-      vi.mocked(GitUtils.getCommitStats).mockResolvedValue({
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(commit).mockResolvedValue();
+      vi.mocked(getLatestCommitHash).mockResolvedValue("abc123");
+      vi.mocked(getCommitStats).mockResolvedValue({
         filesChanged: 2,
         insertions: 10,
         deletions: 5,
       });
-      vi.mocked(GitUtils.hasUpstream).mockResolvedValue(true);
-      vi.mocked(GitUtils.getAheadBehind).mockResolvedValue({ ahead: 1, behind: 0 });
-      vi.mocked(GitUtils.getRemoteUrl).mockResolvedValue("https://github.com/user/repo.git");
+      vi.mocked(hasUpstream).mockResolvedValue(true);
+      vi.mocked(getAheadBehind).mockResolvedValue({ ahead: 1, behind: 0 });
+      vi.mocked(getRemoteUrl).mockResolvedValue("https://github.com/user/repo.git");
       vi.mocked(mockProvider.generateCandidates).mockResolvedValue(["feat: add feature"]);
       vi.mocked(prompts).mockResolvedValue({ selection: "feat: add feature" });
 
       await generateCommand({ dryrun: false });
 
-      expect(GitUtils.commit).toHaveBeenCalledWith("feat: add feature");
+      expect(commit).toHaveBeenCalledWith("feat: add feature");
       expect(message).toHaveBeenCalledWith(
         "",
         expect.objectContaining({
@@ -283,17 +283,17 @@ describe("commands/generate", () => {
 
 
     it("handles clipboard failure with appropriate messages", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue(
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
         mockConfiguration
       );
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
       vi.mocked(mockProvider.generateCandidates).mockResolvedValue(["feat: add feature"]);
       vi.mocked(prompts).mockResolvedValue({ selection: "feat: add feature" });
-      vi.mocked(ClipboardUtils.copyToClipboard).mockRejectedValue(new Error("Clipboard error"));
+      vi.mocked(copyToClipboard).mockRejectedValue(new Error("Clipboard error"));
 
       await generateCommand({ dryrun: false });
 
@@ -317,19 +317,19 @@ describe("commands/generate", () => {
     });
 
     it("handles commit failure with error message", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue({
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue({
         ...mockConfiguration,
         usageMode: UsageMode.COMMIT,
       });
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue({
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue({
         ...mockConfiguration,
         usageMode: UsageMode.COMMIT,
       });
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
-      vi.mocked(GitUtils.commit).mockRejectedValue(new Error("Git commit failed"));
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(commit).mockRejectedValue(new Error("Git commit failed"));
       vi.mocked(mockProvider.generateCandidates).mockResolvedValue(["feat: add feature"]);
       vi.mocked(prompts).mockResolvedValue({ selection: "feat: add feature" });
 
@@ -345,14 +345,14 @@ describe("commands/generate", () => {
 
   describe("error handling", () => {
     it("handles provider errors gracefully", async () => {
-      vi.mocked(ConfigManager.configurationExists).mockResolvedValue(true);
-      vi.mocked(ConfigManager.loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(ConfigManager.getConfigurationWithEnvironmentOverrides).mockReturnValue(
+      vi.mocked(configurationExists).mockResolvedValue(true);
+      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
+      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
         mockConfiguration
       );
-      vi.mocked(GitUtils.checkGitInstalled).mockResolvedValue();
-      vi.mocked(GitUtils.checkInGitRepo).mockResolvedValue();
-      vi.mocked(GitUtils.getGitContext).mockResolvedValue(mockContext);
+      vi.mocked(checkGitInstalled).mockResolvedValue();
+      vi.mocked(checkInGitRepo).mockResolvedValue();
+      vi.mocked(getGitContext).mockResolvedValue(mockContext);
       vi.mocked(mockProvider.generateCandidates).mockRejectedValue(new Error("API error"));
 
       await generateCommand({ dryrun: false });

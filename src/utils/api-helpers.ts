@@ -28,8 +28,8 @@ export function validateApiResponse(
       throw new InvalidAPIKeyError(getProviderDisplayName(provider));
     }
     throw new NetworkError(
-      t("errors.api.requestFailed", { 
-        message: `${response.status} ${response.statusText}` 
+      t("errors.api.requestFailed", {
+        message: `${response.status} ${response.statusText}`,
       })
     );
   }
@@ -83,26 +83,23 @@ export function sortByKey<T, K extends keyof T>(
 ): T[] {
   const sorted = [...items];
   const multiplier = options?.reverse ? -1 : 1;
-  
+
   return sorted.sort((a, b) => {
     const aValue = a[key];
     const bValue = b[key];
-    
+
     if (isString(aValue) && isString(bValue)) {
       return aValue.localeCompare(bValue) * multiplier;
     }
-    
+
     if (isNumber(aValue) && isNumber(bValue)) {
       return (aValue - bValue) * multiplier;
     }
-    
+
     return 0;
   });
 }
 
-export function sortByMultipleKeys<T>(
-  items: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
+export function sortByMultipleKeys<T>(items: T[], compareFn: (a: T, b: T) => number): T[] {
   return [...items].sort(compareFn);
 }

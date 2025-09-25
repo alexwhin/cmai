@@ -24,9 +24,9 @@ import {
   promptUILanguage,
   promptCommitLanguage,
   promptCustomRules,
+  manageCustomRules,
 } from "../../src/utils/ui-utils.js";
 import { Provider, UsageMode } from "../../src/types/index.js";
-import * as UserInterface from "../../src/utils/ui-utils.js";
 import { getAvailableModels, validateAndFetchModels } from "../../src/providers/models.js";
 
 vi.mock("prompts");
@@ -128,12 +128,6 @@ describe("ui-utils", () => {
     vi.clearAllMocks();
     console.log = mockConsoleLog;
     process.exit = mockProcessExit as never;
-    vi.spyOn(UserInterface, "spinner").mockReturnValue({
-      start: vi.fn().mockReturnThis(),
-      succeed: vi.fn().mockReturnThis(),
-      fail: vi.fn().mockReturnThis(),
-      stop: vi.fn().mockReturnThis(),
-    } as unknown as ReturnType<typeof UserInterface.spinner>);
   });
 
   afterEach(() => {
@@ -940,6 +934,101 @@ describe("ui-utils", () => {
 
         expect(() => displayConfiguration(configuration)).not.toThrow();
       });
+
+      it("displays configuration with languages", () => {
+        const configuration = {
+          provider: Provider.OPENAI,
+          apiKey: "test-key",
+          model: "gpt-4",
+          maxCommitLength: 72,
+          commitChoicesCount: 5,
+          uiLanguage: "es" as const,
+          commitLanguage: "fr" as const,
+        };
+
+        displayConfiguration(configuration);
+
+        expect(() => displayConfiguration(configuration)).not.toThrow();
+      });
+
+      it("displays configuration with only UI language", () => {
+        const configuration = {
+          provider: Provider.OPENAI,
+          apiKey: "test-key",
+          model: "gpt-4",
+          maxCommitLength: 72,
+          commitChoicesCount: 5,
+          uiLanguage: "es" as const,
+        };
+
+        displayConfiguration(configuration);
+
+        expect(() => displayConfiguration(configuration)).not.toThrow();
+      });
+
+      it("displays configuration with only commit language", () => {
+        const configuration = {
+          provider: Provider.OPENAI,
+          apiKey: "test-key",
+          model: "gpt-4",
+          maxCommitLength: 72,
+          commitChoicesCount: 5,
+          commitLanguage: "fr" as const,
+        };
+
+        displayConfiguration(configuration);
+
+        expect(() => displayConfiguration(configuration)).not.toThrow();
+      });
+
+      it("displays configuration with custom rules", () => {
+        const configuration = {
+          provider: Provider.OPENAI,
+          apiKey: "test-key",
+          model: "gpt-4",
+          maxCommitLength: 72,
+          commitChoicesCount: 5,
+          customRules: ["Rule 1", "Rule 2", "Rule 3"],
+        };
+
+        displayConfiguration(configuration);
+
+        expect(() => displayConfiguration(configuration)).not.toThrow();
+      });
+
+      it("displays configuration with single custom rule", () => {
+        const configuration = {
+          provider: Provider.OPENAI,
+          apiKey: "test-key",
+          model: "gpt-4",
+          maxCommitLength: 72,
+          commitChoicesCount: 5,
+          customRules: ["Single rule"],
+        };
+
+        displayConfiguration(configuration);
+
+        expect(() => displayConfiguration(configuration)).not.toThrow();
+      });
+
+      it("displays configuration with all optional features", () => {
+        const configuration = {
+          provider: Provider.ANTHROPIC,
+          apiKey: "test-key",
+          model: "claude-3",
+          maxCommitLength: 80,
+          commitChoicesCount: 3,
+          redactSensitiveData: true,
+          usageMode: UsageMode.TERMINAL,
+          uiLanguage: "es" as const,
+          commitLanguage: "fr" as const,
+          customRules: ["Rule 1", "Rule 2"],
+        };
+
+        displayConfiguration(configuration);
+
+        expect(() => displayConfiguration(configuration)).not.toThrow();
+      });
     });
   });
 
@@ -950,7 +1039,7 @@ describe("ui-utils", () => {
 
       vi.doMock("../../src/utils/system-utils.js", () => ({ exit: exitFn }));
 
-      UserInterface.exitWithError("Test error message");
+      exitWithError("Test error message");
 
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Test error message"));
     });
@@ -960,7 +1049,7 @@ describe("ui-utils", () => {
     it("displays formatted error message", () => {
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-      UserInterface.errorWithDebug("Detailed error information");
+      errorWithDebug("Detailed error information");
 
       expect(consoleSpy).toHaveBeenCalledWith("Detailed error information");
     });
@@ -970,7 +1059,7 @@ describe("ui-utils", () => {
     it("displays application logo", () => {
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-      UserInterface.logo();
+      logo();
 
       expect(consoleSpy).toHaveBeenCalled();
     });
@@ -984,7 +1073,7 @@ describe("ui-utils", () => {
     it("returns empty array when user declines custom rules", async () => {
       vi.mocked(prompts).mockResolvedValue({ wantCustomRules: false });
 
-      const result = await UserInterface.promptCustomRules([]);
+      const result = await promptCustomRules([]);
 
       expect(result).toEqual({ value: [], cancelled: false });
     });
@@ -992,7 +1081,7 @@ describe("ui-utils", () => {
     it("returns cancelled when user cancels prompt", async () => {
       vi.mocked(prompts).mockResolvedValue({ wantCustomRules: undefined });
 
-      const result = await UserInterface.promptCustomRules([]);
+      const result = await promptCustomRules([]);
 
       expect(result).toEqual({ value: undefined, cancelled: true });
     });
@@ -1002,7 +1091,7 @@ describe("ui-utils", () => {
         .mockResolvedValueOnce({ wantCustomRules: true })
         .mockResolvedValueOnce({ action: "done" });
 
-      const result = await UserInterface.promptCustomRules(["existing rule"]);
+      const result = await promptCustomRules(["existing rule"]);
 
       expect(result.cancelled).toBe(false);
     });
@@ -1016,7 +1105,7 @@ describe("ui-utils", () => {
     it("handles done action to finish rule management", async () => {
       vi.mocked(prompts).mockResolvedValue({ action: "done" });
 
-      const result = await UserInterface.manageCustomRules(["rule1", "rule2"]);
+      const result = await manageCustomRules(["rule1", "rule2"]);
 
       expect(result.value).toEqual(["rule1", "rule2"]);
       expect(result.cancelled).toBe(false);
@@ -1028,7 +1117,7 @@ describe("ui-utils", () => {
         .mockResolvedValueOnce({ rule: "new custom rule" })
         .mockResolvedValueOnce({ action: "done" });
 
-      const result = await UserInterface.manageCustomRules([]);
+      const result = await manageCustomRules([]);
 
       expect(result.value).toContain("new custom rule");
     });
@@ -1039,7 +1128,7 @@ describe("ui-utils", () => {
         .mockResolvedValueOnce({ ruleIndex: 0 })
         .mockResolvedValueOnce({ action: "done" });
 
-      const result = await UserInterface.manageCustomRules(["rule to delete", "rule to keep"]);
+      const result = await manageCustomRules(["rule to delete", "rule to keep"]);
 
       expect(result.cancelled).toBe(false);
       expect(Array.isArray(result.value)).toBe(true);
@@ -1048,7 +1137,7 @@ describe("ui-utils", () => {
     it("handles undefined action as done", async () => {
       vi.mocked(prompts).mockResolvedValue({ action: undefined });
 
-      const result = await UserInterface.manageCustomRules([]);
+      const result = await manageCustomRules([]);
 
       expect(result.cancelled).toBe(false);
       expect(result.value).toEqual([]);
@@ -1060,7 +1149,7 @@ describe("ui-utils", () => {
         .mockResolvedValueOnce({ rule: undefined })
         .mockResolvedValueOnce({ action: "done" });
 
-      const result = await UserInterface.manageCustomRules([]);
+      const result = await manageCustomRules([]);
 
       expect(result.cancelled).toBe(false);
       expect(result.value).toEqual([]);

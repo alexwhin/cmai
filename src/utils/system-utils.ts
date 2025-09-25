@@ -1,4 +1,3 @@
-
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,7 +35,7 @@ function createWindowsCommand(text: string): ClipboardCommand {
       "-NoProfile",
       "-NonInteractive",
       "-Command",
-      `[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${base64Text}')) | Set-Clipboard`
+      `[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${base64Text}')) | Set-Clipboard`,
     ],
   };
 }
@@ -61,10 +60,10 @@ function createLinuxCommands(text: string): ClipboardCommand[] {
 async function executeClipboardCommand(command: ClipboardCommand): Promise<void> {
   const { execFile } = await import("node:child_process");
   const execFilePromise = promisify(execFile);
-  
+
   await execFilePromise(command.command, command.args, {
     shell: false,
-    windowsHide: true
+    windowsHide: true,
   });
 }
 
@@ -248,8 +247,12 @@ function isValidJWT(token: string): boolean {
       return false;
     }
 
-    const header = JSON.parse(Buffer.from(headerPart.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString());
-    const payload = JSON.parse(Buffer.from(payloadPart.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString());
+    const header = JSON.parse(
+      Buffer.from(headerPart.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString()
+    );
+    const payload = JSON.parse(
+      Buffer.from(payloadPart.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString()
+    );
     return isRecord(header) && isRecord(payload);
   } catch {
     return false;
@@ -609,7 +612,7 @@ export function getPackageVersion(): string {
   try {
     const cwdPackagePath = join(process.cwd(), "package.json");
     const packageJsonContent = readFileSync(cwdPackagePath, "utf-8");
-    
+
     if (isJSONString(packageJsonContent)) {
       const packageJson = JSON.parse(packageJsonContent);
       if (

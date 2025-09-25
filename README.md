@@ -21,6 +21,7 @@
 - ⚙️ Rule enforcement – define per-project or global rules to keep commits consistent
 - 📝 Multiple suggestions – generate and regenerate commit options until one fits
 - 🌍 Multi-language support – generate commits in 25+ languages
+- 🗜️ Commitlint compatibility – works seamlessly with existing commitlint setups
 - 🔒 Built-in safety – auto-redacts API keys, tokens, and secrets before sending to AI
 - 📊 Git-aware – branch context, recent commit analysis, and large diff handling
 
@@ -32,12 +33,30 @@ npm install -g cmai
 yarn global add cmai
 ```
 
+### Try Without Installing
+
+You can also run cmai without installing it globally using `pnpx` (or `npx`):
+
+```bash
+pnpx cmai init
+npx cmai init
+```
+
 ## Quick Start Guide
 
 ```bash
 git add .
 cmai
 ```
+
+### Usage Modes
+
+| Mode      | Description                               |
+| --------- | ----------------------------------------- |
+| clipboard | Copy to clipboard (default)               |
+| commit    | Create a Git commit directly              |
+| terminal  | Output a `git commit` command for editing |
+| display   | Show the messages only                    |
 
 ## General Usage
 
@@ -49,15 +68,6 @@ cmai --dryrun     # Preview prompts before sending
 ```
 
 ![cmai settings example](assets/settings-rules.png)
-
-### Usage Modes
-
-| Mode      | Description                               |
-| --------- | ----------------------------------------- |
-| clipboard | Copy to clipboard (default)               |
-| commit    | Create a Git commit directly              |
-| terminal  | Output a `git commit` command for editing |
-| display   | Show the messages only                    |
 
 ## Configuration
 
@@ -85,6 +95,12 @@ CMAI_MODEL=claude-3-haiku-20240307
 CMAI_USAGE_MODE=COMMIT
 CMAI_COMMIT_LANGUAGE=es
 ```
+
+---
+
+If you find this project useful in any way, please consider giving it a `star` on `GitHub` — it helps others discover it and supports continued development.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=alexwhin/cmai&type=Date)](https://www.star-history.com/#alexwhin/cmai&Date)
 
 ## Development
 
@@ -124,14 +140,12 @@ pnpm lint:fix         # Auto-fix style issues
 pnpm typecheck        # TypeScript type checking
 pnpm knip             # Find unused code/dependencies
 pnpm knip:fix         # Remove unused dependencies
-pnpm pre-push         # Run all quality checks before pushing
-pnpm quality:check    # Alias for pre-push
 ```
 
 #### Analysis & Debugging
 
 ```bash
-pnpm sonar:local      # SonarCloud (requires SONAR_TOKEN & Automatic Analysis disabled)
+pnpm sonar:local      # SonarCloud (requires project SONAR_TOKEN)
 pnpm bundle:stats     # Analyze bundle size
 pnpm analyze          # Package content analysis
 pnpm act              # Test GitHub Actions locally (needs Docker)

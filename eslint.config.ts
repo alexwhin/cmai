@@ -35,7 +35,7 @@ export default [
       "no-ternary": "off",
       "no-nested-ternary": "error",
       "no-unneeded-ternary": "error",
-      "multiline-ternary": ["error", "never"],
+      "multiline-ternary": "off",
       "operator-assignment": ["error", "always"],
 
       curly: ["error", "all"],

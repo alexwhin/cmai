@@ -5,10 +5,6 @@ import { Language } from "../../types/index.js";
 export function getCommitGenerationPrompt(): PromptTemplate {
   const template = `Generate exactly {commitChoicesCount} commit messages for the following changes.
 
-{recentCommitsSection}
-{regenerationNote}
-{customRulesSection}
-
 Commit Message Rules:
 - Generate exactly {commitChoicesCount} commit messages.
 - Maximum {maxCommitLength} characters per message
@@ -22,14 +18,18 @@ Commit Message Rules:
 - No period at the end
 - Keep messages concise but descriptive
 - Combine multiple related changes into cohesive messages
-- Use conventional commit format when appropriate (feat:, fix:, docs:, style:, refactor:, test:, chore:, etc.)
-{languageRule}
 
 Temperature and Tone Matching:
 - Match the formality level of recent commits
 - Maintain the technical depth and detail level seen in recent commits  
 - Preserve any naming conventions or terminology patterns
 - Mirror the specificity level (whether commits are more general or detailed)
+
+{recentCommitsSection}
+{regenerationNote}
+{customRulesSection}
+{commitlintRulesSection}
+{languageRule}
 
 Context:
 Branch: {branch}
@@ -92,4 +92,14 @@ export const formatLanguageRule = (commitLanguage: string): string => {
 
   const languageName = getLanguageDisplayName(commitLanguage as Language);
   return `\n- Important: Generate all commit messages in ${languageName}. The commit type (feat, fix, etc.) should remain in English, but the description should be in ${languageName}.`;
+};
+
+export const formatCommitlintRulesSection = (commitlintRules?: string): string => {
+  if (!commitlintRules) {
+    return "";
+  }
+
+  return `\nCommitlint Rules (detected in project - must be followed strictly):
+${commitlintRules}
+`;
 };

@@ -1,11 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { executeCommitAction } from "../../src/utils/commit-actions.js";
 import { Provider, UsageMode, type AIProvider } from "../../src/types/index.js";
-import * as ClipboardModule from "../../src/utils/system-utils.js";
-import * as GitModule from "../../src/utils/git-utils.js";
-import * as ReportModule from "../../src/utils/data-utils.js";
-import * as DisplayModule from "../../src/utils/ui-utils.js";
-import * as ProcessModule from "../../src/utils/system-utils.js";
+import { copyToClipboard, exit } from "../../src/utils/system-utils.js";
+import { commit, getLatestCommitHash, getCommitStats } from "../../src/utils/git-utils.js";
+import { generateReport } from "../../src/utils/data-utils.js";
+import { message, spinner } from "../../src/utils/ui-utils.js";
 
 vi.mock("../../src/utils/system-utils.js");
 vi.mock("../../src/utils/git-utils.js");
@@ -34,10 +33,10 @@ describe("commit-actions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(DisplayModule.message).mockReturnValue(undefined);
-    vi.mocked(DisplayModule.spinner).mockReturnValue(null);
-    vi.mocked(ProcessModule.exit).mockReturnValue(undefined);
-    vi.mocked(ReportModule.generateReport).mockResolvedValue([
+    vi.mocked(message).mockReturnValue(undefined);
+    vi.mocked(spinner).mockReturnValue(null);
+    vi.mocked(exit).mockReturnValue(undefined);
+    vi.mocked(generateReport).mockResolvedValue([
       { label: "Message", value: "feat: test message" },
     ]);
   });
@@ -45,48 +44,48 @@ describe("commit-actions", () => {
   describe("executeCommitAction", () => {
     describe("clipboard mode", () => {
       it("successfully copies to clipboard", async () => {
-        vi.mocked(ClipboardModule.copyToClipboard).mockResolvedValue();
+        vi.mocked(copyToClipboard).mockResolvedValue();
 
         await executeCommitAction({
           ...baseContext,
           usageMode: UsageMode.CLIPBOARD,
         });
 
-        expect(ClipboardModule.copyToClipboard).toHaveBeenCalledWith("feat: test message");
-        expect(DisplayModule.message).toHaveBeenCalledWith("", { items: expect.any(Array) });
-        expect(DisplayModule.message).toHaveBeenCalledWith("Message copied to clipboard", {
+        expect(copyToClipboard).toHaveBeenCalledWith("feat: test message");
+        expect(message).toHaveBeenCalledWith("", { items: expect.any(Array) });
+        expect(message).toHaveBeenCalledWith("Message copied to clipboard", {
           type: "success",
           variant: "title",
         });
-        expect(ProcessModule.exit).toHaveBeenCalledWith();
+        expect(exit).toHaveBeenCalledWith();
       });
 
       it("handles clipboard failure", async () => {
-        vi.mocked(ClipboardModule.copyToClipboard).mockRejectedValue(new Error("Clipboard error"));
+        vi.mocked(copyToClipboard).mockRejectedValue(new Error("Clipboard error"));
 
         await executeCommitAction({
           ...baseContext,
           usageMode: UsageMode.CLIPBOARD,
         });
 
-        expect(DisplayModule.message).toHaveBeenCalledWith("", { items: expect.any(Array) });
-        expect(DisplayModule.message).toHaveBeenCalledWith("Failed to copy to clipboard", {
+        expect(message).toHaveBeenCalledWith("", { items: expect.any(Array) });
+        expect(message).toHaveBeenCalledWith("Failed to copy to clipboard", {
           type: "warning",
           variant: "title",
         });
-        expect(DisplayModule.message).toHaveBeenCalledWith(
+        expect(message).toHaveBeenCalledWith(
           "You can manually copy the message above",
           { type: "info", variant: "title" }
         );
-        expect(ProcessModule.exit).toHaveBeenCalledWith();
+        expect(exit).toHaveBeenCalledWith();
       });
     });
 
     describe("commit mode", () => {
       it("successfully creates commit", async () => {
-        vi.mocked(GitModule.commit).mockResolvedValue();
-        vi.mocked(GitModule.getLatestCommitHash).mockResolvedValue("abc123");
-        vi.mocked(GitModule.getCommitStats).mockResolvedValue({
+        vi.mocked(commit).mockResolvedValue();
+        vi.mocked(getLatestCommitHash).mockResolvedValue("abc123");
+        vi.mocked(getCommitStats).mockResolvedValue({
           filesChanged: 1,
           insertions: 10,
           deletions: 2,
@@ -97,85 +96,253 @@ describe("commit-actions", () => {
           usageMode: UsageMode.COMMIT,
         });
 
-        expect(GitModule.commit).toHaveBeenCalledWith("feat: test message");
-        expect(GitModule.getLatestCommitHash).toHaveBeenCalled();
-        expect(GitModule.getCommitStats).toHaveBeenCalled();
-        expect(DisplayModule.spinner).toHaveBeenCalledWith("Creating commit...", "start");
-        expect(DisplayModule.spinner).toHaveBeenCalledWith(
+        expect(commit).toHaveBeenCalledWith("feat: test message");
+        expect(getLatestCommitHash).toHaveBeenCalled();
+        expect(getCommitStats).toHaveBeenCalled();
+        expect(spinner).toHaveBeenCalledWith("Creating commit...", "start");
+        expect(spinner).toHaveBeenCalledWith(
           "Commit created successfully!",
           "succeed"
         );
-        expect(DisplayModule.message).toHaveBeenCalledWith("", { items: expect.any(Array) });
-        expect(DisplayModule.message).toHaveBeenCalledWith(
+        expect(message).toHaveBeenCalledWith("", { items: expect.any(Array) });
+        expect(message).toHaveBeenCalledWith(
           "Commit created successfully (ready for push)",
           { type: "success", variant: "title" }
         );
-        expect(ProcessModule.exit).toHaveBeenCalledWith();
+        expect(exit).toHaveBeenCalledWith();
       });
 
       it("handles commit failure", async () => {
         const error = new Error("Commit failed");
-        vi.mocked(GitModule.commit).mockRejectedValue(error);
+        vi.mocked(commit).mockRejectedValue(error);
 
         await executeCommitAction({
           ...baseContext,
           usageMode: UsageMode.COMMIT,
         });
 
-        expect(DisplayModule.spinner).toHaveBeenCalledWith("Creating commit...", "start");
-        expect(DisplayModule.spinner).toHaveBeenCalledWith("Failed to create commit", "fail");
-        expect(DisplayModule.message).toHaveBeenCalledWith("Commit failed", {
+        expect(spinner).toHaveBeenCalledWith("Creating commit...", "start");
+        expect(spinner).toHaveBeenCalledWith("Failed to create commit", "fail");
+        expect(message).toHaveBeenCalledWith("Commit failed", {
           type: "error",
           variant: "title",
         });
-        expect(ProcessModule.exit).toHaveBeenCalledWith(1);
+        expect(exit).toHaveBeenCalledWith(1);
       });
 
       it("handles unknown commit error", async () => {
-        vi.mocked(GitModule.commit).mockRejectedValue("string error");
+        vi.mocked(commit).mockRejectedValue("string error");
 
         await executeCommitAction({
           ...baseContext,
           usageMode: UsageMode.COMMIT,
         });
 
-        expect(DisplayModule.message).toHaveBeenCalledWith(
+        expect(message).toHaveBeenCalledWith(
           "An unexpected error occurred: string error",
           { type: "error", variant: "title" }
         );
-        expect(ProcessModule.exit).toHaveBeenCalledWith(1);
+        expect(exit).toHaveBeenCalledWith(1);
       });
     });
 
-    describe("terminal output mode", () => {
-      it("skip terminal mode test due to readline complexity", () => {
-        // Terminal mode testing is complex due to dynamic imports and readline interaction
-        // This functionality is manually tested and works correctly in practice
-        // Skipping for now to focus on other coverage improvements
-        expect(true).toBe(true);
+    describe.skip("terminal output mode", () => {
+      let mockReadline: {
+        createInterface: ReturnType<typeof vi.fn>;
+      };
+      let mockRl: {
+        question: ReturnType<typeof vi.fn>;
+        close: ReturnType<typeof vi.fn>;
+        write: ReturnType<typeof vi.fn>;
+      };
+      let mockExecFile: ReturnType<typeof vi.fn>;
+      let mockExecSync: ReturnType<typeof vi.fn>;
+      let mockPromisify: ReturnType<typeof vi.fn>;
+      
+      beforeEach(() => {
+        mockRl = {
+          question: vi.fn(),
+          write: vi.fn(),
+          close: vi.fn(),
+        };
+        mockReadline = {
+          createInterface: vi.fn().mockReturnValue(mockRl),
+        };
+        mockExecFile = vi.fn();
+        mockExecSync = vi.fn();
+        mockPromisify = vi.fn(() => vi.fn().mockResolvedValue({ stdout: "", stderr: "" }));
+        
+        vi.doMock("node:readline", () => mockReadline);
+        vi.doMock("node:child_process", () => ({
+          execFile: mockExecFile,
+          execSync: mockExecSync,
+        }));
+        vi.doMock("node:util", () => ({
+          promisify: mockPromisify,
+        }));
+      });
+
+      afterEach(() => {
+        vi.doUnmock("node:readline");
+        vi.doUnmock("node:child_process");
+        vi.doUnmock("node:util");
+      });
+
+      it("displays commit message and prompts user with git command", async () => {
+        vi.mocked(generateReport).mockResolvedValue([
+          { label: "Message", value: "feat: test message" },
+        ]);
+        
+        const gitCommand = "git commit -m 'feat: test message'";
+        mockRl.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
+          callback(gitCommand);
+        });
+
+        await executeCommitAction({
+          ...baseContext,
+          usageMode: UsageMode.TERMINAL,
+        });
+
+        expect(message).toHaveBeenCalledWith("", { items: expect.any(Array) });
+        expect(message).toHaveBeenCalledWith(expect.stringContaining("messages.terminalCommitReady"), { 
+          type: "success", 
+          variant: "title" 
+        });
+        expect(mockRl.write).toHaveBeenCalledWith(gitCommand);
+        expect(mockRl.question).toHaveBeenCalled();
+        expect(mockRl.close).toHaveBeenCalled();
+        expect(exit).toHaveBeenCalledWith();
+      });
+
+      it("handles modified git commit command", async () => {
+        vi.mocked(generateReport).mockResolvedValue([
+          { label: "Message", value: "feat: test message" },
+        ]);
+        
+        mockRl.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
+          callback("git commit -m \"fix: modified message\"");
+        });
+
+        await executeCommitAction({
+          ...baseContext,
+          usageMode: UsageMode.TERMINAL,
+        });
+
+        expect(mockExecFile).toHaveBeenCalledWith("git", ["commit", "-m", "fix: modified message"], {
+          shell: false
+        });
+        expect(message).toHaveBeenCalledWith(expect.stringContaining("messages.commitExecuted"), {
+          type: "success",
+          variant: "title"
+        });
+        expect(exit).toHaveBeenCalledWith();
+      });
+
+      it("handles empty input", async () => {
+        vi.mocked(generateReport).mockResolvedValue([
+          { label: "Message", value: "feat: test message" },
+        ]);
+        
+        mockRl.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
+          callback("");
+        });
+
+        await executeCommitAction({
+          ...baseContext,
+          usageMode: UsageMode.TERMINAL,
+        });
+
+        expect(mockExecFile).not.toHaveBeenCalled();
+        expect(mockExecSync).not.toHaveBeenCalled();
+        expect(exit).toHaveBeenCalledWith();
+      });
+
+      it("handles non-git commands", async () => {
+        vi.mocked(generateReport).mockResolvedValue([
+          { label: "Message", value: "feat: test message" },
+        ]);
+        
+        mockRl.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
+          callback("echo 'custom command'");
+        });
+
+        await executeCommitAction({
+          ...baseContext,
+          usageMode: UsageMode.TERMINAL,
+        });
+
+        expect(message).toHaveBeenCalledWith(expect.stringContaining("errors.system.invalidCommand"), {
+          type: "warning",
+          variant: "title"
+        });
+        expect(mockExecSync).toHaveBeenCalledWith("echo 'custom command'", { stdio: "inherit" });
+        expect(exit).toHaveBeenCalledWith();
+      });
+
+      it("handles git commit errors", async () => {
+        vi.mocked(generateReport).mockResolvedValue([
+          { label: "Message", value: "feat: test message" },
+        ]);
+        
+        mockRl.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
+          callback("git commit -m \"test message\"");
+        });
+        
+        mockPromisify.mockReturnValueOnce(vi.fn().mockRejectedValue(new Error("Git commit failed")));
+
+        await executeCommitAction({
+          ...baseContext,
+          usageMode: UsageMode.TERMINAL,
+        });
+
+        expect(message).toHaveBeenCalledWith("Git commit failed", {
+          type: "error",
+          variant: "title"
+        });
+        expect(exit).toHaveBeenCalledWith(1);
+      });
+
+      it("handles special characters in commit message", async () => {
+        const messageWithSpecialChars = "feat: test $var `cmd` 'quotes' \\backslash";
+        vi.mocked(generateReport).mockResolvedValue([
+          { label: "Message", value: messageWithSpecialChars },
+        ]);
+        
+        mockRl.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
+          callback("");
+        });
+
+        await executeCommitAction({
+          ...baseContext,
+          selectedMessage: messageWithSpecialChars,
+          usageMode: UsageMode.TERMINAL,
+        });
+
+        const expectedEscaped = "git commit -m 'feat: test \\\\$var \\\\`cmd\\\\` '\\\\''quotes'\\\\'' \\\\backslash'";
+        expect(mockRl.write).toHaveBeenCalledWith(expectedEscaped);
       });
     });
 
     describe("default mode", () => {
       it("handles unknown usage mode as clipboard", async () => {
-        vi.mocked(ClipboardModule.copyToClipboard).mockResolvedValue();
+        vi.mocked(copyToClipboard).mockResolvedValue();
         
         await executeCommitAction({
           ...baseContext,
           usageMode: "unknown" as unknown as UsageMode,
         });
 
-        expect(DisplayModule.message).toHaveBeenCalledWith(
+        expect(message).toHaveBeenCalledWith(
           "Message copied to clipboard",
           { type: "success", variant: "title" }
         );
-        expect(ProcessModule.exit).toHaveBeenCalledWith();
+        expect(exit).toHaveBeenCalledWith();
       });
     });
 
     describe("report generation", () => {
       it("includes token usage in reports when available", async () => {
-        vi.mocked(ClipboardModule.copyToClipboard).mockResolvedValue();
+        vi.mocked(copyToClipboard).mockResolvedValue();
         const mockTokenUsage = { totalTokens: 150 };
         const providerWithUsage = {
           getLastTokenUsage: vi.fn().mockReturnValue(mockTokenUsage),
@@ -187,7 +354,7 @@ describe("commit-actions", () => {
           usageMode: UsageMode.CLIPBOARD,
         });
 
-        expect(ReportModule.generateReport).toHaveBeenCalledWith(
+        expect(generateReport).toHaveBeenCalledWith(
           "feat: test message",
           baseContext.gitContext,
           UsageMode.CLIPBOARD,
@@ -200,7 +367,7 @@ describe("commit-actions", () => {
       });
 
       it("handles null token usage", async () => {
-        vi.mocked(ClipboardModule.copyToClipboard).mockResolvedValue();
+        vi.mocked(copyToClipboard).mockResolvedValue();
         const providerWithoutUsage = {
           getLastTokenUsage: vi.fn().mockReturnValue(null),
         };
@@ -211,7 +378,7 @@ describe("commit-actions", () => {
           usageMode: UsageMode.CLIPBOARD,
         });
 
-        expect(ReportModule.generateReport).toHaveBeenCalledWith(
+        expect(generateReport).toHaveBeenCalledWith(
           "feat: test message",
           baseContext.gitContext,
           UsageMode.CLIPBOARD,
@@ -224,9 +391,9 @@ describe("commit-actions", () => {
       });
 
       it("handles commit mode with additional data", async () => {
-        vi.mocked(GitModule.commit).mockResolvedValue();
-        vi.mocked(GitModule.getLatestCommitHash).mockResolvedValue("commit123");
-        vi.mocked(GitModule.getCommitStats).mockResolvedValue({
+        vi.mocked(commit).mockResolvedValue();
+        vi.mocked(getLatestCommitHash).mockResolvedValue("commit123");
+        vi.mocked(getCommitStats).mockResolvedValue({
           filesChanged: 3,
           insertions: 25,
           deletions: 8,
@@ -237,7 +404,7 @@ describe("commit-actions", () => {
           usageMode: UsageMode.COMMIT,
         });
 
-        expect(ReportModule.generateReport).toHaveBeenCalledWith(
+        expect(generateReport).toHaveBeenCalledWith(
           "feat: test message",
           baseContext.gitContext,
           UsageMode.COMMIT,

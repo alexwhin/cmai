@@ -132,6 +132,7 @@ describe("providers/langchain/prompts", () => {
           "Recent commit messages for styling, tone and formatting reference:\n- feat: add feature",
         regenerationNote: "",
         customRulesSection: "",
+        commitlintRulesSection: "",
         maxCommitLength: 72,
         branch: "main",
         files: "src/index.ts, src/utils.ts",
@@ -166,7 +167,7 @@ describe("providers/langchain/prompts", () => {
 
       expect(templateString).toContain("Use imperative mood");
       expect(templateString).toContain("No period at the end");
-      expect(templateString).toContain("conventional commit format");
+      expect(templateString).toContain("Follow the project's existing commit style");
       expect(templateString).toContain(
         "Each commit message must describe ALL the changes in the difference"
       );

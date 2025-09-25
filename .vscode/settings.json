@@ -8,6 +8,8 @@
     "Autobuild",
     "cmai",
     "codellama",
+    "commitlint",
+    "commitlintrc",
     "dryrun",
     "Dsonar",
     "eventpath",

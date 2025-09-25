@@ -46,7 +46,7 @@ export async function getStagedDifference(
 export async function commit(message: string, allowEmpty: boolean = false): Promise<void> {
   const { execFile } = await import("node:child_process");
   const execFilePromise = promisify(execFile);
-  
+
   const args = ["commit", "-m", message];
   if (allowEmpty) {
     args.push("--allow-empty");
@@ -55,14 +55,18 @@ export async function commit(message: string, allowEmpty: boolean = false): Prom
   try {
     const { stderr } = await execFilePromise("git", args, {
       shell: false,
-      windowsHide: true
+      windowsHide: true,
     });
 
     if (stderr && !stderr.includes("create mode") && !stderr.includes("files changed")) {
       throw new GitError(stderr);
     }
   } catch (error) {
-    if (error instanceof Error && "stderr" in error && isString((error as unknown as { stderr: unknown }).stderr)) {
+    if (
+      error instanceof Error &&
+      "stderr" in error &&
+      isString((error as unknown as { stderr: unknown }).stderr)
+    ) {
       const stderr = (error as unknown as { stderr: string }).stderr;
       if (stderr && !stderr.includes("create mode") && !stderr.includes("files changed")) {
         throw new GitError(stderr);
@@ -365,6 +369,7 @@ export async function getRecentCommits(
 
 export async function getGitContext(redactSensitive: boolean = true): Promise<GitContext> {
   const { redactSensitiveData } = await import("./system-utils.js");
+  const { detectCommitlintConfig, parseCommitlintConfig, formatCommitlintRulesForPrompt } = await import("./commitlint-detector.js");
 
   const [stagedFiles, branch] = await Promise.all([getStagedFiles(), getCurrentBranch()]);
 
@@ -372,10 +377,24 @@ export async function getGitContext(redactSensitive: boolean = true): Promise<Gi
   const difference = await getStagedDifference();
   const finalDifference = redactSensitive ? redactSensitiveData(difference) : difference;
 
+  let commitlintRules: string | undefined;
+  try {
+    const configPath = await detectCommitlintConfig();
+    if (configPath) {
+      const rules = await parseCommitlintConfig(configPath);
+      if (rules) {
+        commitlintRules = formatCommitlintRulesForPrompt(rules);
+      }
+    }
+  } catch {
+    commitlintRules = undefined;
+  }
+
   return {
     stagedFiles,
     branch,
     difference: finalDifference,
     recentCommits: recentCommits.length > 0 ? recentCommits : undefined,
+    commitlintRules,
   };
 }

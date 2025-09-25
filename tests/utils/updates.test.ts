@@ -3,8 +3,8 @@ import { promises as fs } from "node:fs";
 import * as https from "node:https";
 import { IncomingMessage } from "node:http";
 import { checkForUpdates } from "../../src/utils/updates.js";
-import * as configUtils from "../../src/utils/config.js";
-import * as uiUtils from "../../src/utils/ui-utils.js";
+import { ensureConfigurationDirectory } from "../../src/utils/config.js";
+import { message } from "../../src/utils/ui-utils.js";
 import { FILE_SYSTEM } from "../../src/constants.js";
 import { join } from "node:path";
 
@@ -36,8 +36,8 @@ interface MockRequest {
 describe("utils/updates", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(configUtils.ensureConfigurationDirectory).mockResolvedValue();
-    vi.mocked(uiUtils.message).mockImplementation(() => {});
+    vi.mocked(ensureConfigurationDirectory).mockResolvedValue();
+    vi.mocked(message).mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -86,7 +86,7 @@ describe("utils/updates", () => {
         expect.stringContaining('"latestVersion": "1.0.1"')
       );
 
-      expect(uiUtils.message).toHaveBeenCalledWith(
+      expect(message).toHaveBeenCalledWith(
         "Update available: v1.0.0 → v1.0.1 run pnpm add -g cmai@latest",
         { type: "error", variant: "title" }
       );
@@ -123,7 +123,7 @@ describe("utils/updates", () => {
 
       await checkForUpdates("1.0.0");
 
-      expect(uiUtils.message).not.toHaveBeenCalled();
+      expect(message).not.toHaveBeenCalled();
     });
 
     it("should use cached data when check interval has not passed", async () => {
@@ -138,7 +138,7 @@ describe("utils/updates", () => {
       await checkForUpdates("1.0.0");
 
       expect(https.get).not.toHaveBeenCalled();
-      expect(uiUtils.message).not.toHaveBeenCalled();
+      expect(message).not.toHaveBeenCalled();
     });
 
     it("should check again when cache interval has passed", async () => {
@@ -179,7 +179,7 @@ describe("utils/updates", () => {
       await checkForUpdates("1.0.0");
 
       expect(https.get).toHaveBeenCalled();
-      expect(uiUtils.message).toHaveBeenCalled();
+      expect(message).toHaveBeenCalled();
     });
 
     it("should handle network errors gracefully", async () => {
@@ -199,7 +199,7 @@ describe("utils/updates", () => {
       });
 
       await expect(checkForUpdates("1.0.0")).resolves.not.toThrow();
-      expect(uiUtils.message).not.toHaveBeenCalled();
+      expect(message).not.toHaveBeenCalled();
     });
 
     it("should handle invalid JSON responses gracefully", async () => {
@@ -230,7 +230,7 @@ describe("utils/updates", () => {
       });
 
       await expect(checkForUpdates("1.0.0")).resolves.not.toThrow();
-      expect(uiUtils.message).not.toHaveBeenCalled();
+      expect(message).not.toHaveBeenCalled();
     });
 
     it("should handle non-200 status codes gracefully", async () => {
@@ -255,7 +255,7 @@ describe("utils/updates", () => {
       });
 
       await expect(checkForUpdates("1.0.0")).resolves.not.toThrow();
-      expect(uiUtils.message).not.toHaveBeenCalled();
+      expect(message).not.toHaveBeenCalled();
     });
 
     it("should handle timeout gracefully", async () => {
@@ -285,7 +285,7 @@ describe("utils/updates", () => {
       });
 
       await expect(checkForUpdates("1.0.0")).resolves.not.toThrow();
-      expect(uiUtils.message).not.toHaveBeenCalled();
+      expect(message).not.toHaveBeenCalled();
     });
 
     it("should compare versions correctly", async () => {
@@ -332,9 +332,9 @@ describe("utils/updates", () => {
         await checkForUpdates(testCase.current);
 
         if (testCase.shouldNotify) {
-          expect(uiUtils.message).toHaveBeenCalled();
+          expect(message).toHaveBeenCalled();
         } else {
-          expect(uiUtils.message).not.toHaveBeenCalled();
+          expect(message).not.toHaveBeenCalled();
         }
       }
     });
@@ -352,7 +352,7 @@ describe("utils/updates", () => {
       await checkForUpdates("1.0.0");
 
       expect(https.get).not.toHaveBeenCalled();
-      expect(uiUtils.message).toHaveBeenCalled();
+      expect(message).toHaveBeenCalled();
 
       const writeCall = vi.mocked(fs.writeFile).mock.calls[0];
       expect(writeCall?.[1]).toContain('"notified": true');
@@ -390,7 +390,7 @@ describe("utils/updates", () => {
 
       await checkForUpdates("1.0.0");
 
-      const messageCalls = vi.mocked(uiUtils.message).mock.calls;
+      const messageCalls = vi.mocked(message).mock.calls;
       const updateMessage = messageCalls.find(
         (call) => typeof call[0] === "string" && call[0].includes("npm install -g cmai@latest")
       );
@@ -430,7 +430,7 @@ describe("utils/updates", () => {
 
       await checkForUpdates("1.0.0");
 
-      const messageCalls = vi.mocked(uiUtils.message).mock.calls;
+      const messageCalls = vi.mocked(message).mock.calls;
       const updateMessage = messageCalls.find(
         (call) => typeof call[0] === "string" && call[0].includes("yarn global add cmai@latest")
       );
@@ -470,7 +470,7 @@ describe("utils/updates", () => {
 
       await checkForUpdates("1.0.0");
 
-      const messageCalls = vi.mocked(uiUtils.message).mock.calls;
+      const messageCalls = vi.mocked(message).mock.calls;
       const updateMessage = messageCalls.find(
         (call) => typeof call[0] === "string" && call[0].includes("pnpm add -g cmai@latest")
       );

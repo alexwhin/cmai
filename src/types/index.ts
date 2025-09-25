@@ -61,6 +61,7 @@ export interface GitContext {
   difference: string;
   recentCommits?: string[];
   regenerationAttempts?: number;
+  commitlintRules?: string;
 }
 
 export interface TokenUsage {

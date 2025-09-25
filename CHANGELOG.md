@@ -1,29 +1,45 @@
-# Changelog
+## <small>0.2.4 (2025-09-25)</small>
 
-## [0.2.4](https://github.com/alexwhin/cmai/compare/v0.2.3...v0.2.4) (2025-09-25)
+* chore: add sonar config and update dev setup documentation ([fb1d247](https://github.com/alexwhin/cmai/commit/fb1d247))
+* chore: release v0.2.4 ([5baabef](https://github.com/alexwhin/cmai/commit/5baabef))
 
-## [0.2.3](https://github.com/alexwhin/cmai/compare/v0.2.2...v0.2.3) (2025-09-25)
 
-## [0.2.2](https://github.com/alexwhin/cmai/compare/v0.2.1...v0.2.2) (2025-09-25)
 
-## [0.2.1](https://github.com/alexwhin/cmai/compare/v0.2.0...v0.2.1) (2025-09-19)
+## <small>0.2.3 (2025-09-25)</small>
 
-## [0.2.0](https://github.com/alexwhin/cmai/compare/v0.1.12...v0.2.0) (2025-09-19)
+* chore: release v0.2.3 ([c754321](https://github.com/alexwhin/cmai/commit/c754321))
+* test: add test helpers and refactor model test utilities ([0af9ea4](https://github.com/alexwhin/cmai/commit/0af9ea4))
 
-### Features
 
-* add gemini support and update dependencies and configurations ([4caed8b](https://github.com/alexwhin/cmai/commit/4caed8b0303909d474b7eec3621ac5e12d7a3a62))
 
-## 0.1.12 (2025-09-19)
+## <small>0.2.2 (2025-09-25)</small>
 
-## [0.1.9](https://github.com/alexwhin/cmai/compare/v0.1.7...v0.1.9) (2025-09-19)
+* chore: release v0.2.2 ([949fc0d](https://github.com/alexwhin/cmai/commit/949fc0d))
+* refactor: unify model configuration across all providers ([b23c740](https://github.com/alexwhin/cmai/commit/b23c740))
 
-## 0.1.7 (2025-09-19)
 
-## 0.1.4 (2025-09-17)
 
-## 0.1.3 (2025-09-17)
+## <small>0.2.1 (2025-09-19)</small>
 
-## 0.1.2 (2025-09-17)
+* chore: release v0.2.1 ([560ad83](https://github.com/alexwhin/cmai/commit/560ad83))
+* refactor: change isBoolean function to be private ([029ed66](https://github.com/alexwhin/cmai/commit/029ed66))
 
-## 0.1.1 (2025-09-17)
+
+
+## 0.2.0 (2025-09-19)
+
+* chore: release v0.2.0 ([cd85f96](https://github.com/alexwhin/cmai/commit/cd85f96))
+* feat: add gemini support and update dependencies and configurations ([4caed8b](https://github.com/alexwhin/cmai/commit/4caed8b))
+* refactor: extract package version loading to getPackageVersion utility ([9303635](https://github.com/alexwhin/cmai/commit/9303635))
+* refactor: move handleError function from cli.ts to errors.ts ([53946a4](https://github.com/alexwhin/cmai/commit/53946a4))
+
+
+
+## <small>0.1.12 (2025-09-19)</small>
+
+* chore: increment version to 0.1.11 for release ([b608d82](https://github.com/alexwhin/cmai/commit/b608d82))
+* chore: release v0.1.12 ([639ad2a](https://github.com/alexwhin/cmai/commit/639ad2a))
+* first commit ([920fb4c](https://github.com/alexwhin/cmai/commit/920fb4c))
+
+
+

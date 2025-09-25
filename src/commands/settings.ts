@@ -203,7 +203,9 @@ export async function settingsCommand(): Promise<void> {
         if (!apiKeyResult.cancelled && apiKeyResult.value) {
           configuration.apiKey = apiKeyResult.value;
           await saveConfiguration(configuration);
-          const messageKey = isUrlBasedProvider(configuration.provider) ? "settings.apiKey.updatedUrl" : "settings.apiKey.updated";
+          const messageKey = isUrlBasedProvider(configuration.provider)
+            ? "settings.apiKey.updatedUrl"
+            : "settings.apiKey.updated";
           message(t(messageKey), { type: "success", variant: "title" });
         }
         break;

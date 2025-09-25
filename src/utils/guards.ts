@@ -66,8 +66,7 @@ export function isValidConfig(value: unknown): value is Config {
     (!hasProperty(value, "maxCommitLength") || isPositiveNumber(value.maxCommitLength)) &&
     (!hasProperty(value, "commitChoicesCount") || isPositiveNumber(value.commitChoicesCount)) &&
     (!hasProperty(value, "usageMode") || isValidUsageMode(value.usageMode)) &&
-    (!hasProperty(value, "redactSensitiveData") ||
-      isBoolean(value.redactSensitiveData)) &&
+    (!hasProperty(value, "redactSensitiveData") || isBoolean(value.redactSensitiveData)) &&
     (!hasProperty(value, "customRules") ||
       (isArray(value.customRules) && value.customRules.every(isString)))
   );

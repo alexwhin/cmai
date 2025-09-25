@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { runCommitWorkflow } from "../../src/utils/commit-workflow.js";
-import * as ProvidersModule from "../../src/providers/index.js";
-import * as ErrorsModule from "../../src/utils/errors.js";
-import * as UserInterfaceModule from "../../src/utils/ui-utils.js";
+import { createProviderFromConfig } from "../../src/providers/index.js";
+import { formatError, isRetryableError } from "../../src/utils/errors.js";
+import { spinner, message, errorWithDebug, formatMenuOption } from "../../src/utils/ui-utils.js";
 import { Provider, UsageMode, type AIProvider } from "../../src/types/index.js";
 
 vi.mock("prompts");
@@ -34,15 +34,15 @@ describe("commit-workflow", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(ProvidersModule.createProviderFromConfig).mockReturnValue(
+    vi.mocked(createProviderFromConfig).mockReturnValue(
       mockProvider as unknown as AIProvider
     );
-    vi.mocked(UserInterfaceModule.spinner).mockReturnValue(null);
-    vi.mocked(UserInterfaceModule.message).mockReturnValue(undefined);
-    vi.mocked(UserInterfaceModule.errorWithDebug).mockReturnValue(undefined);
-    vi.mocked(ErrorsModule.formatError).mockReturnValue("formatted error");
-    vi.mocked(ErrorsModule.isRetryableError).mockReturnValue(false);
-    vi.mocked(UserInterfaceModule.formatMenuOption).mockImplementation(
+    vi.mocked(spinner).mockReturnValue(null);
+    vi.mocked(message).mockReturnValue(undefined);
+    vi.mocked(errorWithDebug).mockReturnValue(undefined);
+    vi.mocked(formatError).mockReturnValue("formatted error");
+    vi.mocked(isRetryableError).mockReturnValue(false);
+    vi.mocked(formatMenuOption).mockImplementation(
       (label, type) => `${label} (${type})`
     );
   });
@@ -60,12 +60,12 @@ describe("commit-workflow", () => {
       expect(result.cancelled).toBe(false);
       expect(result.selectedMessage).toBe("feat: add feature");
       expect(result.provider).toBe(mockProvider);
-      expect(UserInterfaceModule.spinner).toHaveBeenCalledWith(
+      expect(spinner).toHaveBeenCalledWith(
         "Generating commit messages...",
         "start",
         true
       );
-      expect(UserInterfaceModule.spinner).toHaveBeenCalledWith(
+      expect(spinner).toHaveBeenCalledWith(
         "Generating commit messages...",
         "succeed"
       );
@@ -94,7 +94,7 @@ describe("commit-workflow", () => {
 
       expect(result.cancelled).toBe(true);
       expect(result.selectedMessage).toBeUndefined();
-      expect(UserInterfaceModule.message).toHaveBeenCalledWith("Commit cancelled", {
+      expect(message).toHaveBeenCalledWith("Commit cancelled", {
         type: "warning",
         variant: "title",
       });
@@ -111,7 +111,7 @@ describe("commit-workflow", () => {
 
       expect(result.cancelled).toBe(true);
       expect(result.selectedMessage).toBeUndefined();
-      expect(UserInterfaceModule.message).toHaveBeenCalledWith("Commit cancelled", {
+      expect(message).toHaveBeenCalledWith("Commit cancelled", {
         type: "warning",
         variant: "title",
       });
@@ -135,12 +135,12 @@ describe("commit-workflow", () => {
       expect(result.cancelled).toBe(false);
       expect(result.selectedMessage).toBe("feat: regenerated");
       expect(mockProvider.generateCandidates).toHaveBeenCalledTimes(2);
-      expect(UserInterfaceModule.spinner).toHaveBeenCalledWith(
+      expect(spinner).toHaveBeenCalledWith(
         "Generating commit messages...",
         "start",
         true
       );
-      expect(UserInterfaceModule.spinner).toHaveBeenCalledWith(
+      expect(spinner).toHaveBeenCalledWith(
         "Generating commit messages...",
         "succeed"
       );
@@ -172,11 +172,11 @@ describe("commit-workflow", () => {
 
       expect(result.cancelled).toBe(false);
       expect(result.selectedMessage).toBe("fallback message");
-      expect(UserInterfaceModule.spinner).toHaveBeenCalledWith(
+      expect(spinner).toHaveBeenCalledWith(
         "Failed to generate messages from provider",
         "fail"
       );
-      expect(UserInterfaceModule.errorWithDebug).toHaveBeenCalled();
+      expect(errorWithDebug).toHaveBeenCalled();
     });
 
     it("handles generation errors with successful retry", async () => {
@@ -186,7 +186,7 @@ describe("commit-workflow", () => {
       vi.mocked(mockProvider.generateCandidates)
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce(mockCandidates);
-      vi.mocked(ErrorsModule.isRetryableError).mockReturnValue(true);
+      vi.mocked(isRetryableError).mockReturnValue(true);
 
       const prompts = await import("prompts");
       vi.mocked(prompts.default)
@@ -206,7 +206,7 @@ describe("commit-workflow", () => {
         .mockResolvedValueOnce(mockCandidates)
         .mockRejectedValueOnce(new Error("Regeneration error"))
         .mockResolvedValueOnce(["feat: finally works"]);
-      vi.mocked(ErrorsModule.isRetryableError).mockReturnValue(true);
+      vi.mocked(isRetryableError).mockReturnValue(true);
 
       const prompts = await import("prompts");
       vi.mocked(prompts.default)

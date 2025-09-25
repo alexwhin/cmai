@@ -14,7 +14,6 @@ const { CONFIG_DIRECTORY, CONFIG_FILENAME, SCHEMA_FILENAME, SCHEMA_URL } = FILE_
 const CONFIG_FILE_PATH = join(CONFIG_DIRECTORY, CONFIG_FILENAME);
 const SCHEMA_FILE_PATH = SCHEMA_FILENAME;
 
-
 let cachedConfiguration: Config | null = null;
 let schemaValidator: ValidateFunction | null = null;
 const jsonValidator = new Ajv({ allErrors: true });

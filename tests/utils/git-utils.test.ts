@@ -5,6 +5,15 @@ vi.mock("../../src/utils/system-utils.js", () => ({
   redactSensitiveData: vi.fn((text) => `[REDACTED] ${text}`),
 }));
 
+vi.mock("../../src/utils/commitlint-detector.js", () => ({
+  detectCommitlintConfig: vi.fn().mockResolvedValue("/test/commitlint.config.js"),
+  parseCommitlintConfig: vi.fn().mockResolvedValue({
+    types: ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert"],
+    subjectCase: "upper-case",
+  }),
+  formatCommitlintRulesForPrompt: vi.fn().mockReturnValue("Allowed commit types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert. Subject case: upper-case"),
+}));
+
 vi.mock("../../src/utils/ui-utils.js", () => ({
   log: vi.fn(),
   info: vi.fn((message) => message),
@@ -647,6 +656,7 @@ describe("git-utils", () => {
         branch: "main",
         difference: "[REDACTED] diff content",
         recentCommits: ["feat: add (#123)", "fix: bug"],
+        commitlintRules: "Allowed commit types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert. Subject case: upper-case",
       });
     });
 
