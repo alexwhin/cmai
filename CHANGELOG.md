@@ -1,3 +1,18 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+
+
+## <small>0.2.5 (2025-09-25)</small>
+
+* chore: add husky hooks and enhance release-it configuration ([2eef59d](https://github.com/alexwhin/cmai/commit/2eef59d))
+* chore: remove test file ([9fa7940](https://github.com/alexwhin/cmai/commit/9fa7940))
+* test: add test file for git hooks validation ([7f9802b](https://github.com/alexwhin/cmai/commit/7f9802b))
+
 ## <small>0.2.4 (2025-09-25)</small>
 
 * chore: add sonar config and update dev setup documentation ([fb1d247](https://github.com/alexwhin/cmai/commit/fb1d247))
@@ -40,6 +55,3 @@
 * chore: increment version to 0.1.11 for release ([b608d82](https://github.com/alexwhin/cmai/commit/b608d82))
 * chore: release v0.1.12 ([639ad2a](https://github.com/alexwhin/cmai/commit/639ad2a))
 * first commit ([920fb4c](https://github.com/alexwhin/cmai/commit/920fb4c))
-
-
-
