@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## <small>0.2.6 (2025-09-26)</small>
+
+* fix: update regex patterns in utils and clean up readme content ([a0b045b](https://github.com/alexwhin/cmai/commit/a0b045b))
+
 ## <small>0.2.5 (2025-09-25)</small>
 
 * chore: add husky hooks and enhance release-it configuration ([2eef59d](https://github.com/alexwhin/cmai/commit/2eef59d))
