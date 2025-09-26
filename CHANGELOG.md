@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## <small>0.2.7 (2025-09-26)</small>
+
+* chore: enhance sonar duplication detection configuration ([c1a3b03](https://github.com/alexwhin/cmai/commit/c1a3b03))
+
 ## <small>0.2.6 (2025-09-26)</small>
 
 * fix: update regex patterns in utils and clean up readme content ([a0b045b](https://github.com/alexwhin/cmai/commit/a0b045b))
