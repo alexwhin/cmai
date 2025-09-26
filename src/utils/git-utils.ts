@@ -99,7 +99,7 @@ export async function getCommitStats(): Promise<{
     stats.filesChanged = parseInt(filesChangedMatch[1], 10);
   }
 
-  const insertionsMatch = stdout.match(/(\d+)\s+insertions?\(\+\)/);
+  const insertionsMatch = stdout.match(/(\d+)\s+insertion(?:s)?\(\+\)/);
   if (insertionsMatch && insertionsMatch[1] && isString(insertionsMatch[1])) {
     stats.insertions = parseInt(insertionsMatch[1], 10);
   }

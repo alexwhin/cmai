@@ -312,7 +312,7 @@ function parseJsConfigContent(content: string): CommitlintRules {
   }
 
   if (!rules.types) {
-    const extendsMatch = content.match(/extends\s*:\s*\[?\s*["']([^"']+)["']/);
+    const extendsMatch = content.match(/extends\s*:\s*(?:\[\s*)?["']([^"']+)["']/);
     if (extendsMatch?.[1]) {
       const extendedTypes = getTypesFromExtendedConfig(extendsMatch[1]);
       if (extendedTypes) {

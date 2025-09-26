@@ -390,7 +390,7 @@ function createRedactionPatterns(): RedactionPattern[] {
 
     {
       pattern:
-        /^(\s*)([\w_]+(?:_(?:key|token|secret|password|pwd|pass|auth|credentials|api_key|access_token))):\s*(.+)$/gim,
+        /^(\s*)([\w_]+_(?:key|token|secret|password|pwd|pass|auth|credentials|api_key|access_token)):\s*(.+)$/gim,
       replacement: (_match, indent, key, value) => {
         const fingerprint = generateFingerprint(String(value).trim());
         return `${indent}${key}: [REDACTED:${fingerprint}]`;
@@ -509,7 +509,7 @@ function createRedactionPatterns(): RedactionPattern[] {
 
     {
       pattern:
-        /(?<!export\s+|=)\b(?:secret|key|pass|password|pwd|auth)(?:\d+|[A-Za-z0-9_-]{3,})\b(?!=)/gi,
+        /\b(?<!export\s)(?<!export\s\w+)(?:secret|key|pass|password|pwd|auth)(?:\d+|[A-Za-z0-9_-]{3,})\b(?!=)/gi,
       replacement: (match) => {
         if (
           /^(?:ghp_|gho_|ghu_|ghs_|ghr_|glpat-|xox[bpars]-|sk_live_|sk_test_|pk_live_|pk_test_|AKIA|eyJ)/i.test(

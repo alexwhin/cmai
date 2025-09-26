@@ -96,12 +96,6 @@ CMAI_USAGE_MODE=COMMIT
 CMAI_COMMIT_LANGUAGE=es
 ```
 
----
-
-If you find this project useful in any way, please consider giving it a `star` on `GitHub` — it helps others discover it and supports continued development.
-
-[![Star History Chart](https://api.star-history.com/svg?repos=alexwhin/cmai&type=Date)](https://www.star-history.com/#alexwhin/cmai&Date)
-
 ## Development
 
 ### Prerequisites

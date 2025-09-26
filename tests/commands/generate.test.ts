@@ -81,6 +81,15 @@ describe("commands/generate", () => {
     vi.mocked(createProviderFromConfig).mockReturnValue(mockProvider as any);
   });
 
+  const setupBasicMocks = (config = mockConfiguration, context = mockContext) => {
+    vi.mocked(configurationExists).mockResolvedValue(true);
+    vi.mocked(loadConfiguration).mockResolvedValue(config);
+    vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(config);
+    vi.mocked(checkGitInstalled).mockResolvedValue();
+    vi.mocked(checkInGitRepo).mockResolvedValue();
+    vi.mocked(getGitContext).mockResolvedValue(context);
+  };
+
   afterEach(() => {
     process.exit = originalExit;
   });
@@ -97,14 +106,7 @@ describe("commands/generate", () => {
 
   describe("git checks", () => {
     it("performs git checks", async () => {
-      vi.mocked(configurationExists).mockResolvedValue(true);
-      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
-        mockConfiguration
-      );
-      vi.mocked(checkGitInstalled).mockResolvedValue();
-      vi.mocked(checkInGitRepo).mockResolvedValue();
-      vi.mocked(getGitContext).mockResolvedValue(mockContext);
+      setupBasicMocks();
       vi.mocked(mockProvider.generateCandidates).mockResolvedValue(["feat: add new feature"]);
       vi.mocked(prompts).mockResolvedValue({ selection: "feat: add new feature" });
 
@@ -117,14 +119,7 @@ describe("commands/generate", () => {
 
   describe("staged files check", () => {
     it("exits when no files staged without allowEmpty", async () => {
-      vi.mocked(configurationExists).mockResolvedValue(true);
-      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
-        mockConfiguration
-      );
-      vi.mocked(checkGitInstalled).mockResolvedValue();
-      vi.mocked(checkInGitRepo).mockResolvedValue();
-      vi.mocked(getGitContext).mockResolvedValue({
+      setupBasicMocks(mockConfiguration, {
         ...mockContext,
         stagedFiles: [],
       });
@@ -209,14 +204,7 @@ describe("commands/generate", () => {
 
   describe("usage modes", () => {
     it("copies to clipboard in clipboard mode", async () => {
-      vi.mocked(configurationExists).mockResolvedValue(true);
-      vi.mocked(loadConfiguration).mockResolvedValue(mockConfiguration);
-      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue(
-        mockConfiguration
-      );
-      vi.mocked(checkGitInstalled).mockResolvedValue();
-      vi.mocked(checkInGitRepo).mockResolvedValue();
-      vi.mocked(getGitContext).mockResolvedValue(mockContext);
+      setupBasicMocks();
       vi.mocked(mockProvider.generateCandidates).mockResolvedValue(["feat: add feature"]);
       vi.mocked(prompts).mockResolvedValue({ selection: "feat: add feature" });
       vi.mocked(copyToClipboard).mockResolvedValue();
@@ -239,18 +227,11 @@ describe("commands/generate", () => {
     });
 
     it("creates commit in commit mode", async () => {
-      vi.mocked(configurationExists).mockResolvedValue(true);
-      vi.mocked(loadConfiguration).mockResolvedValue({
+      const commitConfig = {
         ...mockConfiguration,
         usageMode: UsageMode.COMMIT,
-      });
-      vi.mocked(getConfigurationWithEnvironmentOverrides).mockReturnValue({
-        ...mockConfiguration,
-        usageMode: UsageMode.COMMIT,
-      });
-      vi.mocked(checkGitInstalled).mockResolvedValue();
-      vi.mocked(checkInGitRepo).mockResolvedValue();
-      vi.mocked(getGitContext).mockResolvedValue(mockContext);
+      };
+      setupBasicMocks(commitConfig);
       vi.mocked(commit).mockResolvedValue();
       vi.mocked(getLatestCommitHash).mockResolvedValue("abc123");
       vi.mocked(getCommitStats).mockResolvedValue({
