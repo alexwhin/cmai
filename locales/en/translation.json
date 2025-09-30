@@ -52,6 +52,7 @@
       "insufficientPermissions": "Insufficient permissions: {{message}}",
       "clipboardFailed": "Failed to copy to clipboard",
       "commitCreateFailed": "Failed to create commit",
+      "invalidCommand": "Not a git commit command - executing as shell command",
       "settingsLoopExceeded": "Settings loop exceeded maximum iterations",
       "processWouldExit": "Process would exit with code {{code}}",
       "cannotCopyEmptyText": "Cannot copy empty text",

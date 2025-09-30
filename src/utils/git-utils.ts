@@ -139,7 +139,7 @@ export async function getAheadBehind(): Promise<{
     const [ahead, behind] = stdout
       .trim()
       .split("\t")
-      .map((value: string) => (isString(value) ? parseInt(value, 10) : 0));
+      .map((value: string) => parseInt(value, 10) || 0);
     return { ahead: ahead || 0, behind: behind || 0 };
   } catch {
     return { ahead: 0, behind: 0 };

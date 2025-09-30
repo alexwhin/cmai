@@ -860,6 +860,17 @@ describe("ui-utils", () => {
 
         expect(result).toBe(false);
       });
+
+      it("handles generic errors", async () => {
+        vi.mocked(validateAndFetchModels).mockResolvedValue({
+          isValid: false,
+          error: new Error("Something went wrong")
+        });
+
+        const result = await validateApiKey(Provider.OPENAI, "key");
+
+        expect(result).toBe(false);
+      });
     });
   });
 
@@ -1125,13 +1136,14 @@ describe("ui-utils", () => {
     it("handles remove action to delete rule", async () => {
       vi.mocked(prompts)
         .mockResolvedValueOnce({ action: "remove" })
-        .mockResolvedValueOnce({ ruleIndex: 0 })
+        .mockResolvedValueOnce({ ruleToRemove: "0" })
         .mockResolvedValueOnce({ action: "done" });
 
       const result = await manageCustomRules(["rule to delete", "rule to keep"]);
 
       expect(result.cancelled).toBe(false);
-      expect(Array.isArray(result.value)).toBe(true);
+      expect(result.value).toEqual(["rule to keep"]);
+      expect(result.value).not.toContain("rule to delete");
     });
 
     it("handles undefined action as done", async () => {

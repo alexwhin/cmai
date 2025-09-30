@@ -326,6 +326,42 @@ feat: actual commit message
       vi.restoreAllMocks();
     });
 
+    it("filters out explanatory text containing 'commit messages'", () => {
+      const textWithExplanation = `Here are the commit messages:
+feat: add new feature
+These commit messages follow conventional format
+fix: resolve issue`;
+
+      const result = provider["parseTextResponse"](textWithExplanation);
+
+      expect(result).toEqual(["feat: add new feature", "fix: resolve issue"]);
+      expect(message).toHaveBeenCalledWith(expect.stringContaining("JSON parsing failed"), {
+        type: "warning",
+        variant: "title",
+      });
+
+      vi.restoreAllMocks();
+    });
+
+    it("filters out standalone JSON bracket characters", () => {
+      const textWithBrackets = `[
+feat: add new feature
+]
+{
+fix: resolve issue
+}`;
+
+      const result = provider["parseTextResponse"](textWithBrackets);
+
+      expect(result).toEqual(["feat: add new feature", "fix: resolve issue"]);
+      expect(message).toHaveBeenCalledWith(expect.stringContaining("JSON parsing failed"), {
+        type: "warning",
+        variant: "title",
+      });
+
+      vi.restoreAllMocks();
+    });
+
     it("removes trailing periods from commit messages", () => {
       const textWithPeriods = `"feat: add new feature."
 "fix: resolve issue."

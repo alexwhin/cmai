@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import prompts from "prompts";
 import { generateCommand } from "../../src/commands/generate.js";
@@ -8,6 +7,7 @@ import { copyToClipboard } from "../../src/utils/system-utils.js";
 import { createProvider, createProviderFromConfig } from "../../src/providers/index.js";
 import { exitWithError, errorWithDebug, message } from "../../src/utils/ui-utils.js";
 import { Provider, UsageMode } from "../../src/types/index.js";
+import type { AIProvider } from "../../src/types/index.js";
 
 vi.mock("prompts");
 vi.mock("../../src/utils/config.js");
@@ -77,8 +77,8 @@ describe("commands/generate", () => {
       throw new Error("Exit with error");
     });
 
-    vi.mocked(createProvider).mockReturnValue(mockProvider as any);
-    vi.mocked(createProviderFromConfig).mockReturnValue(mockProvider as any);
+    vi.mocked(createProvider).mockReturnValue(mockProvider as unknown as AIProvider);
+    vi.mocked(createProviderFromConfig).mockReturnValue(mockProvider as unknown as AIProvider);
   });
 
   const setupBasicMocks = (config = mockConfiguration, context = mockContext) => {

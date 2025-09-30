@@ -1,0 +1,5 @@
+ignoredBuiltDependencies:
+  - oxc-resolver
+
+onlyBuiltDependencies:
+  - esbuild

@@ -690,5 +690,29 @@ describe("git-utils", () => {
 
       expect(context.recentCommits).toBeUndefined();
     });
+
+    it("handles commitlint detection errors gracefully", async () => {
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "file1.ts", stderr: "" })
+        .mockResolvedValueOnce({ stdout: "main", stderr: "" })
+        .mockResolvedValueOnce({ stdout: "", stderr: "" })
+        .mockResolvedValueOnce({ stdout: "", stderr: "" })
+        .mockResolvedValueOnce({ stdout: "", stderr: "" })
+        .mockResolvedValueOnce({ stdout: "diff", stderr: "" });
+
+      vi.doMock("../../src/utils/commitlint-detector.js", () => ({
+        detectCommitlintConfig: vi.fn().mockRejectedValue(new Error("Commitlint error")),
+        parseCommitlintConfig: vi.fn(),
+        formatCommitlintRulesForPrompt: vi.fn(),
+      }));
+
+      vi.resetModules();
+      const { getGitContext } = await import("../../src/utils/git-utils.js");
+      const context = await getGitContext();
+
+      expect(context.commitlintRules).toBeUndefined();
+
+      vi.doUnmock("../../src/utils/commitlint-detector.js");
+    });
   });
 });

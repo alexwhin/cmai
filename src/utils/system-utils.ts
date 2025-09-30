@@ -509,8 +509,14 @@ function createRedactionPatterns(): RedactionPattern[] {
 
     {
       pattern:
-        /\b(?<!export\s)(?<!export\s\w+)(?:secret|key|pass|password|pwd|auth)(?:\d+|[A-Za-z0-9_-]{3,})\b(?!=)/gi,
-      replacement: (match) => {
+        /\b(?:secret|key|pass|password|pwd|auth)(?:\d+|[A-Za-z0-9_-]{3,})\b(?!=)/gi,
+      replacement: (match: string, ...args: unknown[]) => {
+        const offset = args[args.length - 2] as number;
+        const fullString = args[args.length - 1] as string;
+        const beforeMatch = fullString.slice(Math.max(0, offset - 10), offset);
+        if (/export\s+$/.test(beforeMatch)) {
+          return match;
+        }
         if (
           /^(?:ghp_|gho_|ghu_|ghs_|ghr_|glpat-|xox[bpars]-|sk_live_|sk_test_|pk_live_|pk_test_|AKIA|eyJ)/i.test(
             match

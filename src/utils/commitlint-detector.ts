@@ -148,7 +148,7 @@ function parseSimpleYamlValue(value: string): unknown {
     return parseYamlArray(trimmed);
   }
 
-  return trimmed.replace(/^['"]|['"]$/g, "");
+  return trimmed.replace(/(^['"])|(['"]$)/g, "");
 }
 
 function parseYamlArray(arrayString: string): unknown[] {

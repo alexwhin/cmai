@@ -5,6 +5,7 @@ import {
   formatRegenerationNote,
   formatCustomRulesSection,
   formatLanguageRule,
+  formatCommitlintRulesSection,
 } from "../../../src/providers/langchain/prompts.js";
 
 describe("providers/langchain/prompts", () => {
@@ -104,6 +105,33 @@ describe("providers/langchain/prompts", () => {
   describe("formatLanguageRule", () => {
     it("returns empty string for English", () => {
       expect(formatLanguageRule("en")).toBe("");
+    });
+
+    it("returns formatted rule for non-English languages", () => {
+      const result = formatLanguageRule("es");
+      expect(result).toContain("Español");
+      expect(result).toContain("Important: Generate all commit messages in");
+      expect(result).toContain("The commit type (feat, fix, etc.) should remain in English");
+    });
+
+    it("returns formatted rule for French", () => {
+      const result = formatLanguageRule("fr");
+      expect(result).toContain("Français");
+    });
+  });
+
+  describe("formatCommitlintRulesSection", () => {
+    it("returns empty string when no rules provided", () => {
+      expect(formatCommitlintRulesSection(undefined)).toBe("");
+      expect(formatCommitlintRulesSection("")).toBe("");
+    });
+
+    it("formats commitlint rules section with rules", () => {
+      const rules = "type-enum: [feat, fix, chore]";
+      const result = formatCommitlintRulesSection(rules);
+      expect(result).toContain("Commitlint Rules");
+      expect(result).toContain(rules);
+      expect(result).toContain("must be followed strictly");
     });
   });
 

@@ -1,10 +1,9 @@
-import { promisify } from "node:util";
 import { Config, UsageMode, GitContext, AIProvider } from "../types/index.js";
-import { copyToClipboard } from "./system-utils.js";
+import { GitError } from "./errors.js";
+import { copyToClipboard, exit } from "./system-utils.js";
 import { commit, getLatestCommitHash, getCommitStats } from "./git-utils.js";
 import { generateReport, ReportData } from "./data-utils.js";
 import { message, spinner } from "./ui-utils.js";
-import { exit } from "./system-utils.js";
 import { t } from "./i18n.js";
 
 interface CommitActionContext {
@@ -114,10 +113,10 @@ async function executeTerminalAction(context: CommitActionContext): Promise<void
   message(t("messages.terminalCommitReady"), { type: "success", variant: "title" });
 
   const shellEscapedMessage = selectedMessage
+    .replace(/\\/g, "\\\\")
     .replace(/'/g, "'\\''")
     .replace(/\$/g, "\\$")
-    .replace(/`/g, "\\`")
-    .replace(/\\/g, "\\\\");
+    .replace(/`/g, "\\`");
 
   const commitCommand = `git commit -m '${shellEscapedMessage}'`;
 
@@ -143,11 +142,25 @@ async function executeTerminalAction(context: CommitActionContext): Promise<void
       const match = answer.trim().match(gitCommitRegex);
 
       if (match && match.length > 1 && match[1]) {
-        const { execFile } = await import("node:child_process");
-        const execFilePromise = promisify(execFile);
+        const { spawn } = await import("node:child_process");
+        const commitMessage = match[1];
 
-        await execFilePromise("git", ["commit", "-m", match[1]], {
-          shell: false,
+        await new Promise<void>((resolve, reject) => {
+          const gitProcess = spawn("git", ["commit", "-m", commitMessage], {
+            stdio: "inherit" as const,
+          });
+
+          gitProcess.on("close", (code: number | null) => {
+            if (code === 0) {
+              resolve();
+            } else {
+              reject(new GitError(t("errors.system.commitCreateFailed")));
+            }
+          });
+
+          gitProcess.on("error", (error: Error) => {
+            reject(error);
+          });
         });
 
         message(t("messages.commitExecuted"), { type: "success", variant: "title" });
