@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## <small>0.2.9 (2025-10-01)</small>
+
+* fix: restore Node 18 compatibility and improve test coverage ([3122e13](https://github.com/alexwhin/cmai/commit/3122e13))
+
 ## <small>0.2.8 (2025-09-26)</small>
 
 * chore: migrate sonar config to .sonarcloud.properties format ([1183967](https://github.com/alexwhin/cmai/commit/1183967))
