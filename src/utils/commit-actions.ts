@@ -112,13 +112,7 @@ async function executeTerminalAction(context: CommitActionContext): Promise<void
   message("", { items });
   message(t("messages.terminalCommitReady"), { type: "success", variant: "title" });
 
-  const shellEscapedMessage = selectedMessage
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "'\\''")
-    .replace(/\$/g, "\\$")
-    .replace(/`/g, "\\`");
-
-  const commitCommand = `git commit -m '${shellEscapedMessage}'`;
+  const commitCommand = `git commit -m "${selectedMessage.replace(/"/g, '\\"')}"`;
 
   const readline = await import("node:readline");
   const rl = readline.createInterface({
