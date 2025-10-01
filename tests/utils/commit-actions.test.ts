@@ -193,7 +193,7 @@ describe("commit-actions", () => {
           { label: "Message", value: "feat: test message" },
         ]);
 
-        const gitCommand = "git commit -m \"feat: test message\"";
+        const gitCommand = "git commit -m 'feat: test message'";
         mockRl.question.mockImplementation((_prompt: string, callback: (answer: string) => void) => {
           callback("");
         });
@@ -360,7 +360,7 @@ describe("commit-actions", () => {
           usageMode: UsageMode.TERMINAL,
         });
 
-        const expectedEscaped = "git commit -m \"feat: test $var `cmd` 'quotes' \\backslash\"";
+        const expectedEscaped = "git commit -m 'feat: test $var `cmd` '\\''quotes'\\'' \\backslash'";
         expect(mockRl.write).toHaveBeenCalledWith(expectedEscaped);
       });
     });
