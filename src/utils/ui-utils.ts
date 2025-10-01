@@ -239,9 +239,7 @@ class PromptFactory {
 
   static createUsageModePrompt(currentMode?: UsageMode): prompts.PromptObject {
     const isUpdate = !!currentMode;
-    const message = isUpdate
-      ? getPromptMessage("SELECT_USAGE_MODE")
-      : getPromptMessage("SELECT_USAGE_MODE");
+    const message = getPromptMessage("SELECT_USAGE_MODE");
     const initial = isUpdate ? Object.values(UsageMode).indexOf(currentMode) : 0;
 
     return {

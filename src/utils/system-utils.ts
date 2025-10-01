@@ -413,9 +413,13 @@ function createRedactionPatterns(): RedactionPattern[] {
 
     {
       pattern:
-        /\b(api[_-]?key|apikey|api[_-]?token|token|secret[_-]?key|secret|password|pwd|passwd|pass|auth[_-]?token|access[_-]?token|refresh[_-]?token|bearer[_-]?token)\s*[:=]\s*["']?(?!(?:ghp_|gho_|ghu_|ghs_|ghr_|glpat-|xox[bpars]-|sk_live_|sk_test_|pk_live_|pk_test_|AKIA|eyJ))([A-Za-z0-9_\-./+=]{8,})["']?/gi,
+        /\b(api[_-]?key|apikey|api[_-]?token|token|secret[_-]?key|secret|password|pwd|passwd|pass|auth[_-]?token|access[_-]?token|refresh[_-]?token|bearer[_-]?token)\s*[:=]\s*["']?([A-Za-z0-9_\-./+=]{8,})["']?/gi,
       replacement: (_match, key, value) => {
-        const fingerprint = generateFingerprint(String(value));
+        const valueStr = String(value);
+        if (/^(?:ghp_|gho_|ghu_|ghs_|ghr_|glpat-|xox[bpars]-|sk_live_|sk_test_|pk_live_|pk_test_|AKIA|eyJ)/.test(valueStr)) {
+          return _match;
+        }
+        const fingerprint = generateFingerprint(valueStr);
         const sep = _match.includes(":") ? ": " : "=";
         return `${key}${sep}[REDACTED:${fingerprint}]`;
       },
@@ -509,12 +513,13 @@ function createRedactionPatterns(): RedactionPattern[] {
 
     {
       pattern:
-        /\b(?:secret|key|pass|password|pwd|auth)(?:\d+|[A-Za-z0-9_-]{3,})\b(?!=)/gi,
+        /\b(?:secret|key|pass|password|pwd|auth)(?:\d+|[A-Za-z0-9_-]{3,})\b/gi,
       replacement: (match: string, ...args: unknown[]) => {
         const offset = args[args.length - 2] as number;
         const fullString = args[args.length - 1] as string;
         const beforeMatch = fullString.slice(Math.max(0, offset - 10), offset);
-        if (/export\s+$/.test(beforeMatch)) {
+        const afterMatch = fullString.slice(offset + match.length, offset + match.length + 1);
+        if (/export\s+$/.test(beforeMatch) || afterMatch === "=") {
           return match;
         }
         if (
