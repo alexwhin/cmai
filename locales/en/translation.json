@@ -59,6 +59,14 @@
       "defaultError": "An unexpected error occurred",
       "i18nNotInitialized": "i18n not initialized when calling t(\"{{key}}\")"
     },
+    "security": {
+      "insecurePermissions": "Security warning: Configuration file has insecure permissions ({{current}}). Expected {{expected}}.",
+      "fixingPermissions": "Automatically fixing permissions for {{path}}...",
+      "permissionsUpdated": "Permissions updated successfully.",
+      "permissionsWarning": "Warning: Could not set secure permissions on {{path}}: {{error}}",
+      "getPermissionsFailed": "Failed to get file permissions: {{error}}",
+      "setPermissionsFailed": "Failed to set file permissions: {{error}}"
+    },
     "unknown": "An unexpected error occurred: {{message}}"
   },
   "messages": {

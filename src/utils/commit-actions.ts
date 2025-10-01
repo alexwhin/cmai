@@ -118,9 +118,9 @@ async function executeTerminalAction(context: CommitActionContext): Promise<void
     output: process.stdout,
   });
 
-  function escapeShellArg(arg: string): string {
+  const escapeShellArg = (arg: string): string => {
     return "'" + arg.replace(/'/g, "'\\''") + "'";
-  }
+  };
 
   const commitCommand = `git commit -m ${escapeShellArg(selectedMessage)}`;
 

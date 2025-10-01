@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { promises as fs } from "node:fs";
+import { promises as fs, Stats } from "node:fs";
 import {
   ensureConfigurationDirectory,
   saveConfiguration,
   configurationExists,
   getConfigurationWithEnvironmentOverrides,
+  checkConfigFilePermissions,
+  ensureConfigFilePermissions,
 } from "../../src/utils/config.js";
 import { Config, Provider, UsageMode } from "../../src/types/index.js";
+import { message } from "../../src/utils/ui-utils.js";
 
 vi.mock("node:fs", () => ({
   promises: {
@@ -14,6 +17,8 @@ vi.mock("node:fs", () => ({
     writeFile: vi.fn(),
     access: vi.fn(),
     mkdir: vi.fn(),
+    stat: vi.fn(),
+    chmod: vi.fn(),
   },
 }));
 
@@ -352,6 +357,100 @@ describe("config", () => {
       const result = getConfigurationWithEnvironmentOverrides(configWithLegacy);
 
       expect(result.usageMode).toBe(UsageMode.COMMIT);
+    });
+  });
+
+  describe("checkConfigFilePermissions", () => {
+    it("does nothing if config file does not exist", async () => {
+      vi.mocked(fs.access).mockRejectedValue(new Error("ENOENT"));
+
+      await checkConfigFilePermissions();
+
+      expect(fs.stat).not.toHaveBeenCalled();
+      expect(fs.chmod).not.toHaveBeenCalled();
+    });
+
+    it("does nothing if permissions are already correct (600)", async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.stat).mockResolvedValue({
+        mode: 0o100600,
+      } as unknown as Stats);
+
+      await checkConfigFilePermissions();
+
+      expect(fs.chmod).not.toHaveBeenCalled();
+      expect(message).not.toHaveBeenCalled();
+    });
+
+    it("warns and fixes insecure permissions (644)", async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.stat).mockResolvedValue({
+        mode: 0o100644,
+      } as unknown as Stats);
+      vi.mocked(fs.chmod).mockResolvedValue(undefined);
+
+      await checkConfigFilePermissions();
+
+      expect(message).toHaveBeenCalledWith(
+        expect.stringContaining("insecure permissions"),
+        expect.objectContaining({ type: "warning" })
+      );
+      expect(message).toHaveBeenCalledWith(
+        expect.stringContaining("fixing permissions"),
+        expect.objectContaining({ type: "info" })
+      );
+      expect(fs.chmod).toHaveBeenCalledWith(".cmai/settings.json", 0o600);
+      expect(message).toHaveBeenCalledWith(
+        expect.stringContaining("updated successfully"),
+        expect.objectContaining({ type: "success" })
+      );
+    });
+
+    it("warns and fixes world-readable permissions (666)", async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.stat).mockResolvedValue({
+        mode: 0o100666,
+      } as unknown as Stats);
+      vi.mocked(fs.chmod).mockResolvedValue(undefined);
+
+      await checkConfigFilePermissions();
+
+      expect(message).toHaveBeenCalledWith(
+        expect.stringContaining("insecure permissions"),
+        expect.objectContaining({ type: "warning" })
+      );
+      expect(fs.chmod).toHaveBeenCalledWith(".cmai/settings.json", 0o600);
+    });
+
+    it("handles chmod errors gracefully", async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.stat).mockResolvedValue({
+        mode: 0o100644,
+      } as unknown as Stats);
+      vi.mocked(fs.chmod).mockRejectedValue(new Error("Permission denied"));
+
+      await expect(checkConfigFilePermissions()).rejects.toThrow("Permission denied");
+    });
+  });
+
+  describe("ensureConfigFilePermissions", () => {
+    it("sets file permissions to 600", async () => {
+      vi.mocked(fs.chmod).mockResolvedValue(undefined);
+
+      await ensureConfigFilePermissions(".cmai/settings.json");
+
+      expect(fs.chmod).toHaveBeenCalledWith(".cmai/settings.json", 0o600);
+    });
+
+    it("warns but does not throw on permission errors", async () => {
+      vi.mocked(fs.chmod).mockRejectedValue(new Error("Operation not permitted"));
+
+      await ensureConfigFilePermissions(".cmai/settings.json");
+
+      expect(message).toHaveBeenCalledWith(
+        expect.stringContaining("Could not set secure permissions"),
+        expect.objectContaining({ type: "warning" })
+      );
     });
   });
 });

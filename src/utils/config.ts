@@ -4,7 +4,7 @@ import Ajv, { ValidateFunction } from "ajv";
 
 import { Config, UsageMode } from "../types/index.js";
 import { parseProvider } from "./data-utils.js";
-import { ConfigurationNotFoundError, InvalidConfigurationError } from "./errors.js";
+import { ConfigurationNotFoundError, InvalidConfigurationError, SystemError } from "./errors.js";
 import { message } from "./ui-utils.js";
 import { t } from "./i18n.js";
 import { FILE_SYSTEM, DEFAULTS } from "../constants.js";
@@ -50,6 +50,8 @@ export async function loadConfiguration(): Promise<Config> {
   }
 
   try {
+    await checkConfigFilePermissions();
+
     const configurationData = await fs.readFile(CONFIG_FILE_PATH, "utf-8");
     if (!isJSONString(configurationData)) {
       throw new InvalidConfigurationError(["Configuration file contains invalid JSON"]);
@@ -169,5 +171,80 @@ function parseUsageMode(value: string | undefined): UsageMode | undefined {
       return UsageMode.CLIPBOARD;
     default:
       return undefined;
+  }
+}
+
+async function getFilePermissions(filePath: string): Promise<number> {
+  try {
+    const stats = await fs.stat(filePath);
+    return stats.mode & parseInt("777", 8);
+  } catch (error) {
+    throw new SystemError(
+      t("errors.security.getPermissionsFailed", {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+}
+
+async function setFilePermissions(filePath: string, mode: number): Promise<void> {
+  try {
+    await fs.chmod(filePath, mode);
+  } catch (error) {
+    throw new SystemError(
+      t("errors.security.setPermissionsFailed", {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+}
+
+export async function checkConfigFilePermissions(): Promise<void> {
+  try {
+    const exists = await configurationExists();
+    if (!exists) {
+      return;
+    }
+
+    const permissions = await getFilePermissions(CONFIG_FILE_PATH);
+    const expectedPermissions = FILE_SYSTEM.CONFIG_FILE_PERMISSIONS;
+
+    if (permissions !== expectedPermissions) {
+      const currentPerms = permissions.toString(8);
+      const expectedPerms = expectedPermissions.toString(8);
+
+      message(
+        t("errors.security.insecurePermissions", {
+          current: currentPerms,
+          expected: expectedPerms,
+        }),
+        { type: "warning", variant: "title" }
+      );
+      message(t("errors.security.fixingPermissions", { path: CONFIG_FILE_PATH }), {
+        type: "info",
+      });
+
+      await setFilePermissions(CONFIG_FILE_PATH, expectedPermissions);
+
+      message(t("errors.security.permissionsUpdated"), { type: "success" });
+    }
+  } catch (error) {
+    if (error instanceof SystemError) {
+      throw error;
+    }
+  }
+}
+
+export async function ensureConfigFilePermissions(filePath: string): Promise<void> {
+  try {
+    await setFilePermissions(filePath, FILE_SYSTEM.CONFIG_FILE_PERMISSIONS);
+  } catch (error) {
+    message(
+      t("errors.security.permissionsWarning", {
+        path: filePath,
+        error: error instanceof Error ? error.message : String(error),
+      }),
+      { type: "warning" }
+    );
   }
 }
