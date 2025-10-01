@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## <small>0.2.12 (2025-10-01)</small>
+
+* fix: simplify shell escaping to use double quotes instead of single quotes in commit command ([efe57de](https://github.com/alexwhin/cmai/commit/efe57de))
+
 ## <small>0.2.11 (2025-10-01)</small>
 
 * ci: drop node 18 support from test matrix in github actions pipeline ([cce2d21](https://github.com/alexwhin/cmai/commit/cce2d21))
