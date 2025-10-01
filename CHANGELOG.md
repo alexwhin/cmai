@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## <small>0.2.14 (2025-10-01)</small>
+
+* ci: update node matrix to 20.18.1, 22.12.0, 24.0.0 and fix config validation ([c283dd6](https://github.com/alexwhin/cmai/commit/c283dd6))
+
 ## <small>0.2.13 (2025-10-01)</small>
 
 * fix: use single quotes for shell escaping in git commit command ([6d5df19](https://github.com/alexwhin/cmai/commit/6d5df19))
