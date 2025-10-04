@@ -128,7 +128,8 @@
   "packageManager": "pnpm@10.14.0",
   "lint-staged": {
     "*.ts": [
-      "eslint --fix"
+      "eslint --fix",
+      "bash -c 'pnpm knip'"
     ]
   }
 }

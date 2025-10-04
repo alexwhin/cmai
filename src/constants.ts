@@ -74,11 +74,6 @@ export const CHOICE_VALUES = {
   VIEW: "view",
 } as const;
 
-export const SECURITY = {
-  MIN_STRING_LENGTH_FOR_ENTROPY: 16,
-  ENTROPY_THRESHOLD: 0.6,
-} as const;
-
 export const SYSTEM = {
   EXIT_DELAY_MS: 100,
   PLATFORM: {
