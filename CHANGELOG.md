@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## 0.3.0 (2025-10-04)
+
+* refactor: remove custom redaction patterns and rely solely on redactum library ([5ff5b88](https://github.com/alexwhin/cmai/commit/5ff5b88))
+* chore: add knip to lint-staged and remove unused entropy constants ([4465a35](https://github.com/alexwhin/cmai/commit/4465a35))
+* feat: add redactum for data redaction and include schema file in distribution ([e07c1b2](https://github.com/alexwhin/cmai/commit/e07c1b2))
+
 ## <small>0.2.15 (2025-10-04)</small>
 
 * Update README.md ([4c8acc8](https://github.com/alexwhin/cmai/commit/4c8acc8))
