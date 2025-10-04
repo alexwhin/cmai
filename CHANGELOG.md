@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## <small>0.2.15 (2025-10-04)</small>
+
+* Update README.md ([4c8acc8](https://github.com/alexwhin/cmai/commit/4c8acc8))
+
 ## <small>0.2.14 (2025-10-01)</small>
 
 * ci: update node matrix to 20.18.1, 22.12.0, 24.0.0 and fix config validation ([c283dd6](https://github.com/alexwhin/cmai/commit/c283dd6))
