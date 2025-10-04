@@ -237,64 +237,7 @@ export function redactSensitiveData(text: string): string {
     },
   });
 
-  let processedText = result.redactedText;
-
-  processedText = processedText.replace(
-    /(https?|ftp|ssh|git|mongodb|postgres|postgresql|mysql|redis|mssql|sqlite):\/\/([^:/\s]+):([^@/\s]+)@([^/\s]+)/gi,
-    (_match, protocol, user, pass, host) => {
-      const fingerprint = generateFingerprint(String(pass));
-      return `${protocol}://${user}:[REDACTED:${fingerprint}]@${host}`;
-    }
-  );
-
-  processedText = processedText.replace(/\b(sk-ant-[A-Za-z0-9-]{20,})\b/g, (match) => {
-    const fingerprint = generateFingerprint(match);
-    return `[REDACTED:${fingerprint}]`;
-  });
-
-  processedText = processedText.replace(
-    /\b(ghp_[A-Za-z0-9]{30,}|gho_[A-Za-z0-9]{30,}|ghu_[A-Za-z0-9]{30,}|ghs_[A-Za-z0-9]{30,}|ghr_[A-Za-z0-9]{30,})\b/g,
-    (match) => {
-      const fingerprint = generateFingerprint(match);
-      return `[REDACTED:${fingerprint}]`;
-    }
-  );
-
-  processedText = processedText.replace(/\b(?:\d{4}[-\s]?){3}\d{4}\b/g, (match) => {
-    const fingerprint = generateFingerprint(match);
-    return `[REDACTED:${fingerprint}]`;
-  });
-
-  processedText = processedText.replace(
-    /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi,
-    (match) => {
-      const fingerprint = generateFingerprint(match);
-      return `[REDACTED_UUID:${fingerprint}]`;
-    }
-  );
-
-  processedText = processedText.replace(
-    /(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:)*::(?:[0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{0,4}|::[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4})*|[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{0,4})*::|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}/g,
-    (match) => {
-      if (!match.includes(":") || match.length < 3 || /:\d+$/.test(match)) {
-        return match;
-      }
-      const normalized = match.toLowerCase();
-      if (
-        normalized.startsWith("fe80:") ||
-        normalized.startsWith("::1") ||
-        normalized.startsWith("fc") ||
-        normalized.startsWith("fd") ||
-        normalized === "::1"
-      ) {
-        return match;
-      }
-      const fingerprint = generateFingerprint(match);
-      return `[REDACTED_IPV6:${fingerprint}]`;
-    }
-  );
-
-  return processedText;
+  return result.redactedText;
 }
 
 export function getPackageVersion(): string {
