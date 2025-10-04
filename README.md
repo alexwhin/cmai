@@ -1,4 +1,4 @@
-# cmai - commits that write themselves
+# ⚡️ cmai - commits that write themselves
 
 ![Supports Ollama](https://img.shields.io/badge/⚡-ollama-f2f2f2)
 ![Supports Anthropic](https://img.shields.io/badge/⚡-anthropic-d87757)
