@@ -260,7 +260,7 @@ describe("system-utils", () => {
     it("redacts email addresses with fingerprints", async () => {
       const { redactSensitiveData } = await import("../../src/utils/system-utils.js");
       const result = redactSensitiveData("Contact: john@example.com");
-      expect(result).toMatch(/^Contact: \[REDACTED_EMAIL:[0-9a-f]{8}\]$/);
+      expect(result).toMatch(/^Contact: \[REDACTED:[0-9a-f]{8}\]$/);
     });
 
     it("redacts API keys with fingerprints", async () => {

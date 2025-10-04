@@ -10,19 +10,19 @@ importers:
     dependencies:
       '@langchain/anthropic':
         specifier: 0.3.29
-        version: 0.3.29(@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76)))(zod@3.25.76)
+        version: 0.3.29(@langchain/core@0.3.78)(zod@3.25.76)
       '@langchain/core':
         specifier: 0.3.78
-        version: 0.3.78(openai@5.12.2(zod@3.25.76))
+        version: 0.3.78
       '@langchain/google-genai':
         specifier: 0.2.18
-        version: 0.2.18(@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76)))
+        version: 0.2.18(@langchain/core@0.3.78)
       '@langchain/ollama':
         specifier: 0.2.4
-        version: 0.2.4(@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76)))
+        version: 0.2.4(@langchain/core@0.3.78)
       '@langchain/openai':
         specifier: 0.6.14
-        version: 0.6.14(@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76)))
+        version: 0.6.14(@langchain/core@0.3.78)
       ajv:
         specifier: 8.17.1
         version: 8.17.1
@@ -44,6 +44,9 @@ importers:
       prompts:
         specifier: 2.4.2
         version: 2.4.2
+      redactum:
+        specifier: ^1.0.2
+        version: 1.0.2(@langchain/core@0.3.78)
     devDependencies:
       '@commitlint/cli':
         specifier: 20.1.0
@@ -2468,6 +2471,27 @@ packages:
     resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
     engines: {node: '>= 14.18.0'}
 
+  redactum@1.0.2:
+    resolution: {integrity: sha512-7FqjpCz2xzUGTkIuSCbm2A7VefY7/EV2f/T2gumTCMkq85UWjplxrImzssRS0b3xi4Vg31yeGWV1UtudbLpRtA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@anthropic-ai/sdk': ^0.24.0
+      '@langchain/core': ^0.3.0
+      ai: ^3.0.0
+      llamaindex: ^0.12.0
+      openai: ^4.0.0
+    peerDependenciesMeta:
+      '@anthropic-ai/sdk':
+        optional: true
+      '@langchain/core':
+        optional: true
+      ai:
+        optional: true
+      llamaindex:
+        optional: true
+      openai:
+        optional: true
+
   release-it@19.0.5:
     resolution: {integrity: sha512-bYlUKC0TQroBKi8jQUeoxLHql4d9Fx/2EQLHPKUobXTNSiTS2WY8vlgdHZRhRjVEMyAWwyadJVKfFZnRJuRn4Q==}
     engines: {node: ^20.12.0 || >=22.0.0}
@@ -3487,22 +3511,22 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@langchain/anthropic@0.3.29(@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76)))(zod@3.25.76)':
+  '@langchain/anthropic@0.3.29(@langchain/core@0.3.78)(zod@3.25.76)':
     dependencies:
       '@anthropic-ai/sdk': 0.65.0(zod@3.25.76)
-      '@langchain/core': 0.3.78(openai@5.12.2(zod@3.25.76))
+      '@langchain/core': 0.3.78
       fast-xml-parser: 4.5.3
     transitivePeerDependencies:
       - zod
 
-  '@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76))':
+  '@langchain/core@0.3.78':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.3.71(openai@5.12.2(zod@3.25.76))
+      langsmith: 0.3.71
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -3515,21 +3539,21 @@ snapshots:
       - '@opentelemetry/sdk-trace-base'
       - openai
 
-  '@langchain/google-genai@0.2.18(@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76)))':
+  '@langchain/google-genai@0.2.18(@langchain/core@0.3.78)':
     dependencies:
       '@google/generative-ai': 0.24.1
-      '@langchain/core': 0.3.78(openai@5.12.2(zod@3.25.76))
+      '@langchain/core': 0.3.78
       uuid: 11.1.0
 
-  '@langchain/ollama@0.2.4(@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76)))':
+  '@langchain/ollama@0.2.4(@langchain/core@0.3.78)':
     dependencies:
-      '@langchain/core': 0.3.78(openai@5.12.2(zod@3.25.76))
+      '@langchain/core': 0.3.78
       ollama: 0.5.18
       uuid: 10.0.0
 
-  '@langchain/openai@0.6.14(@langchain/core@0.3.78(openai@5.12.2(zod@3.25.76)))':
+  '@langchain/openai@0.6.14(@langchain/core@0.3.78)':
     dependencies:
-      '@langchain/core': 0.3.78(openai@5.12.2(zod@3.25.76))
+      '@langchain/core': 0.3.78
       js-tiktoken: 1.0.21
       openai: 5.12.2(zod@3.25.76)
       zod: 3.25.76
@@ -4896,7 +4920,7 @@ snapshots:
       typescript: 5.9.2
       zod: 4.1.11
 
-  langsmith@0.3.71(openai@5.12.2(zod@3.25.76)):
+  langsmith@0.3.71:
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -4905,8 +4929,6 @@ snapshots:
       p-retry: 4.6.2
       semver: 7.7.2
       uuid: 10.0.0
-    optionalDependencies:
-      openai: 5.12.2(zod@3.25.76)
 
   levn@0.4.1:
     dependencies:
@@ -5386,6 +5408,12 @@ snapshots:
       picomatch: 2.3.1
 
   readdirp@4.1.2: {}
+
+  redactum@1.0.2(@langchain/core@0.3.78):
+    dependencies:
+      yaml: 2.8.1
+    optionalDependencies:
+      '@langchain/core': 0.3.78
 
   release-it@19.0.5(@types/node@24.6.0)(magicast@0.3.5):
     dependencies:
