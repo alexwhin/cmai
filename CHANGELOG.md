@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## 0.4.0 (2025-11-06)
+
+* test: fix package manager detection in updates test by mocking environment variable ([a4e881f](https://github.com/alexwhin/cmai/commit/a4e881f))
+* feat: add lockfile filtering to staged diff and increase git buffer to 10MB ([1998671](https://github.com/alexwhin/cmai/commit/1998671))
+
 ## 0.3.0 (2025-10-04)
 
 * refactor: remove custom redaction patterns and rely solely on redactum library ([5ff5b88](https://github.com/alexwhin/cmai/commit/5ff5b88))
