@@ -127,7 +127,9 @@ describe("git-utils", () => {
   describe("getStagedDifference", () => {
     it("returns staged differences", async () => {
       const difference = "diff --git a/file.js b/file.js\n+console.log('test');";
-      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: difference, stderr: "" });
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "file.js\n", stderr: "" })
+        .mockResolvedValueOnce({ stdout: difference, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const result = await getStagedDifference();
@@ -137,7 +139,9 @@ describe("git-utils", () => {
 
     it("truncates long differences", async () => {
       const longDifference = "x".repeat(15000);
-      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: longDifference, stderr: "" });
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "file.js\n", stderr: "" })
+        .mockResolvedValueOnce({ stdout: longDifference, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const result = await getStagedDifference();
@@ -147,7 +151,9 @@ describe("git-utils", () => {
 
     it("truncates very long diffs", async () => {
       const longDiff = "a".repeat(100001);
-      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: longDiff, stderr: "" });
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "file.js\n", stderr: "" })
+        .mockResolvedValueOnce({ stdout: longDiff, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const diff = await getStagedDifference(100000);
@@ -157,7 +163,9 @@ describe("git-utils", () => {
 
     it("handles custom max length parameter", async () => {
       const diff = "a".repeat(150);
-      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: diff, stderr: "" });
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "file.js\n", stderr: "" })
+        .mockResolvedValueOnce({ stdout: diff, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const result = await getStagedDifference(100);
@@ -167,12 +175,77 @@ describe("git-utils", () => {
 
     it("does not truncate when under limit", async () => {
       const shortDiff = "diff content";
-      gitMocks.mockExecuteCommand.mockResolvedValue({ stdout: shortDiff, stderr: "" });
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "file.js\n", stderr: "" })
+        .mockResolvedValueOnce({ stdout: shortDiff, stderr: "" });
 
       const { getStagedDifference } = await import("../../src/utils/git-utils.js");
       const diff = await getStagedDifference();
 
       expect(diff).toEqual(shortDiff);
+    });
+
+    it("filters out yarn.lock from diff", async () => {
+      const diff = "diff --git a/file.js b/file.js\n+console.log('test');";
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "file.js\nyarn.lock\n", stderr: "" })
+        .mockResolvedValueOnce({ stdout: diff, stderr: "" });
+
+      const { getStagedDifference } = await import("../../src/utils/git-utils.js");
+      const result = await getStagedDifference();
+
+      expect(result).toBe(diff);
+    });
+
+    it("filters out package-lock.json from diff", async () => {
+      const diff = "diff --git a/src/index.ts b/src/index.ts\n+export default {};";
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "src/index.ts\npackage-lock.json\n", stderr: "" })
+        .mockResolvedValueOnce({ stdout: diff, stderr: "" });
+
+      const { getStagedDifference } = await import("../../src/utils/git-utils.js");
+      const result = await getStagedDifference();
+
+      expect(result).toBe(diff);
+    });
+
+    it("filters out pnpm-lock.yaml from diff", async () => {
+      const diff = "diff --git a/app.ts b/app.ts\n+const app = {};";
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({ stdout: "app.ts\npnpm-lock.yaml\n", stderr: "" })
+        .mockResolvedValueOnce({ stdout: diff, stderr: "" });
+
+      const { getStagedDifference } = await import("../../src/utils/git-utils.js");
+      const result = await getStagedDifference();
+
+      expect(result).toBe(diff);
+    });
+
+    it("returns empty string when only lock files are staged", async () => {
+      gitMocks.mockExecuteCommand.mockResolvedValueOnce({
+        stdout: "yarn.lock\npackage-lock.json\n",
+        stderr: "",
+      });
+
+      const { getStagedDifference } = await import("../../src/utils/git-utils.js");
+      const result = await getStagedDifference();
+
+      expect(result).toBe("");
+    });
+
+    it("filters out lock files in subdirectories", async () => {
+      const diff = "diff --git a/packages/app/src/index.ts b/packages/app/src/index.ts";
+      gitMocks.mockExecuteCommand
+        .mockResolvedValueOnce({
+          stdout: "packages/app/src/index.ts\npackages/app/yarn.lock\n",
+          stderr: "",
+        })
+        .mockResolvedValueOnce({ stdout: diff, stderr: "" });
+
+      const { getStagedDifference } = await import("../../src/utils/git-utils.js");
+      const result = await getStagedDifference();
+
+      expect(result).toBe(diff);
     });
   });
 
@@ -641,11 +714,12 @@ describe("git-utils", () => {
   describe("getGitContext", () => {
     it("returns full git context", async () => {
       gitMocks.mockExecuteCommand
-        .mockResolvedValueOnce({ stdout: "file1.ts\nfile2.js\n", stderr: "" }) // getStagedFiles
+        .mockResolvedValueOnce({ stdout: "file1.ts\nfile2.js\n", stderr: "" }) // getStagedFiles (first call)
         .mockResolvedValueOnce({ stdout: "main\n", stderr: "" }) // getCurrentBranch
         .mockResolvedValueOnce({ stdout: "feat: add (#123)|\n", stderr: "" }) // getRecentCommits - strategy 1
         .mockResolvedValueOnce({ stdout: "fix: bug|Alice|\n", stderr: "" }) // getRecentCommits - strategy 2
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - strategy 3
+        .mockResolvedValueOnce({ stdout: "file1.ts\nfile2.js\n", stderr: "" }) // getStagedFiles (inside getStagedDifference)
         .mockResolvedValueOnce({ stdout: "diff content", stderr: "" }); // getStagedDifference
 
       const { getGitContext } = await import("../../src/utils/git-utils.js");
@@ -662,11 +736,12 @@ describe("git-utils", () => {
 
     it("handles context with redaction disabled", async () => {
       gitMocks.mockExecuteCommand
-        .mockResolvedValueOnce({ stdout: "file1.ts\nfile2.js", stderr: "" }) // getStagedFiles
+        .mockResolvedValueOnce({ stdout: "file1.ts\nfile2.js", stderr: "" }) // getStagedFiles (first call)
         .mockResolvedValueOnce({ stdout: "main", stderr: "" }) // getCurrentBranch
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getMergeCommits
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getDiverseCommits
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getFallbackCommits
+        .mockResolvedValueOnce({ stdout: "file1.ts\nfile2.js", stderr: "" }) // getStagedFiles (inside getStagedDifference)
         .mockResolvedValueOnce({ stdout: "sensitive diff content", stderr: "" }); // getStagedDifference
 
       const { getGitContext } = await import("../../src/utils/git-utils.js");
@@ -678,11 +753,12 @@ describe("git-utils", () => {
 
     it("handles empty recent commits gracefully", async () => {
       gitMocks.mockExecuteCommand
-        .mockResolvedValueOnce({ stdout: "file1.ts", stderr: "" }) // getStagedFiles
+        .mockResolvedValueOnce({ stdout: "file1.ts", stderr: "" }) // getStagedFiles (first call)
         .mockResolvedValueOnce({ stdout: "main", stderr: "" }) // getCurrentBranch
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getMergeCommits
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getDiverseCommits
         .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getFallbackCommits
+        .mockResolvedValueOnce({ stdout: "file1.ts", stderr: "" }) // getStagedFiles (inside getStagedDifference)
         .mockResolvedValueOnce({ stdout: "diff", stderr: "" }); // getStagedDifference
 
       const { getGitContext } = await import("../../src/utils/git-utils.js");
@@ -693,12 +769,13 @@ describe("git-utils", () => {
 
     it("handles commitlint detection errors gracefully", async () => {
       gitMocks.mockExecuteCommand
-        .mockResolvedValueOnce({ stdout: "file1.ts", stderr: "" })
-        .mockResolvedValueOnce({ stdout: "main", stderr: "" })
-        .mockResolvedValueOnce({ stdout: "", stderr: "" })
-        .mockResolvedValueOnce({ stdout: "", stderr: "" })
-        .mockResolvedValueOnce({ stdout: "", stderr: "" })
-        .mockResolvedValueOnce({ stdout: "diff", stderr: "" });
+        .mockResolvedValueOnce({ stdout: "file1.ts", stderr: "" }) // getStagedFiles (first call)
+        .mockResolvedValueOnce({ stdout: "main", stderr: "" }) // getCurrentBranch
+        .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getMergeCommits
+        .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getDiverseCommits
+        .mockResolvedValueOnce({ stdout: "", stderr: "" }) // getRecentCommits - getFallbackCommits
+        .mockResolvedValueOnce({ stdout: "file1.ts", stderr: "" }) // getStagedFiles (inside getStagedDifference)
+        .mockResolvedValueOnce({ stdout: "diff", stderr: "" }); // getStagedDifference
 
       vi.doMock("../../src/utils/commitlint-detector.js", () => ({
         detectCommitlintConfig: vi.fn().mockRejectedValue(new Error("Commitlint error")),

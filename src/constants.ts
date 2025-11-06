@@ -44,6 +44,19 @@ export const FILE_SYSTEM = {
 export const GIT = {
   DIFF_TRUNCATION_LIMIT: 3000,
   MAX_DIFF_LENGTH: 10000,
+  MAX_BUFFER_BYTES: 10 * 1024 * 1024,
+  IGNORED_FILES: [
+    "yarn.lock",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "poetry.lock",
+    "Gemfile.lock",
+    "composer.lock",
+    "Cargo.lock",
+    "go.sum",
+    "Pipfile.lock",
+    "bun.lockb",
+  ] as readonly string[],
   AUTOMATED_PATTERNS: [
     /^(Auto|auto)/,
     /renovate/i,

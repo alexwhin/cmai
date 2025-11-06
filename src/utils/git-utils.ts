@@ -36,7 +36,21 @@ export async function getCurrentBranch(): Promise<string> {
 export async function getStagedDifference(
   maxLength: number = GIT.MAX_DIFF_LENGTH
 ): Promise<string> {
-  const { stdout } = await executeCommand("git diff --cached");
+  const stagedFiles = await getStagedFiles();
+  const filesToInclude = stagedFiles.filter((file) => {
+    const fileName = file.split("/").pop() || file;
+    return !GIT.IGNORED_FILES.includes(fileName);
+  });
+
+  if (filesToInclude.length === 0) {
+    return "";
+  }
+
+  const { stdout } = await executeCommand(
+    `git diff --cached -- ${filesToInclude.map((f) => `"${f}"`).join(" ")}`,
+    { maxBuffer: GIT.MAX_BUFFER_BYTES }
+  );
+
   if (stdout.length > maxLength) {
     return stdout.substring(0, maxLength) + "\n... (truncated)";
   }

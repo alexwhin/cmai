@@ -87,7 +87,7 @@ describe("utils/updates", () => {
       );
 
       expect(message).toHaveBeenCalledWith(
-        "Update available: v1.0.0 → v1.0.1 run pnpm add -g cmai@latest",
+        "Update available: v1.0.0 → v1.0.1 run npm install -g cmai@latest",
         { type: "error", variant: "title" }
       );
     });
