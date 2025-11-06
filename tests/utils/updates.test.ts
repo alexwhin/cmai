@@ -46,6 +46,9 @@ describe("utils/updates", () => {
 
   describe("checkForUpdates", () => {
     it("should perform initial check when no cache exists", async () => {
+      const originalUserAgent = process.env.npm_config_user_agent;
+      delete process.env.npm_config_user_agent;
+
       vi.mocked(fs.readFile).mockRejectedValue(new Error("ENOENT"));
 
       const mockResponse: MockResponse = {
@@ -90,6 +93,10 @@ describe("utils/updates", () => {
         "Update available: v1.0.0 → v1.0.1 run npm install -g cmai@latest",
         { type: "error", variant: "title" }
       );
+
+      if (originalUserAgent) {
+        process.env.npm_config_user_agent = originalUserAgent;
+      }
     });
 
     it("should not show notification when current version is up to date", async () => {
