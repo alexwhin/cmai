@@ -86,7 +86,7 @@
     "provenance": true
   },
   "dependencies": {
-    "@langchain/anthropic": "0.3.29",
+    "@langchain/anthropic": "1.0.0",
     "@langchain/core": "0.3.78",
     "@langchain/google-genai": "0.2.18",
     "@langchain/ollama": "0.2.4",
